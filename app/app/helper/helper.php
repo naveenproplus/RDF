@@ -2,7 +2,7 @@
 namespace App\helper;
 use App\Models\DocNum;
 use Carbon\Carbon;
-use DB;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
@@ -796,46 +796,98 @@ class helper{
         return $status;
     }
 
-    public static function sendNotification($UserID,$Title,$Message){
-        $firebaseToken=array();
-        $sql="Select IFNULL(fcmToken,'') as fcmToken From tbl_customer where ActiveStatus=1 and DFlag=0 and CustomerID='".$UserID."'";
-        $result = DB::SELECT($sql);
-        for($i=0;$i<count($result);$i++){
-            if($result[$i]->fcmToken!=""){
-                $firebaseToken[]=$result[$i]->fcmToken;
+    /**
+     * @throws \JsonException
+     */
+    public static function sendNotification($UserID, $title, $body): string
+    {
+        // Fetch all tokens from DB
+        $result = DB::table('tbl_customer')
+            ->where([
+                ['ActiveStatus', '=', 1],
+                ['DFlag', '=', 0],
+                ['CustomerID', '=', $UserID]
+            ])
+            ->pluck('fcmToken')
+            ->filter()
+            ->toArray();
+        if (empty($result)) return 'No valid tokens found.';
+
+        $serviceAccountPath = storage_path('app/firebase/firebase_credentials.json');
+        $projectId = config('app.firebase_project_id');
+
+        $accessToken = self::generateAccessToken($serviceAccountPath);
+        if (!$accessToken) return 'Failed to generate access token.';
+
+        $url = "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send";
+
+        $success = 0;
+        $fail = 0;
+
+        foreach ($result as $token) {
+            $payload = [
+                'message' => [
+                    'token' => $token,
+                    'notification' => compact('title', 'body'),
+                ],
+            ];
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $accessToken,
+                'Content-Type' => 'application/json',
+            ])->post($url, $payload);
+
+            if ($response->successful()) {
+                $success++;
+            } else {
+                $fail++;
             }
         }
-        if(count($firebaseToken)>0){
-            $SERVER_API_KEY = config('app.firebase_server_key');// firebase server key
 
-            $data = [
-                "registration_ids" => $firebaseToken,
-                "notification" => [
-                    "title" => $Title,
-                    "body" => $Message,
-                    "bodyLocKey" => "bharani",
-                ]
-            ];
-            $dataString = json_encode($data);
+        return "Notifications sent. Success: {$success}, Failed: {$fail}";
+    }
 
-            $headers = [
-                'Authorization: key=' . $SERVER_API_KEY,
-                'Content-Type: application/json',
-            ];
+    /**
+     * @throws \JsonException
+     */
+    public static function generateAccessToken($serviceAccountPath)
+    {
+        $serviceAccount = json_decode(file_get_contents($serviceAccountPath), true, 512, JSON_THROW_ON_ERROR);
 
-            $ch = curl_init();
+        $now = time();
+        $expires = $now + 3600;
+        $jwtHeader = self::base64UrlEncode(json_encode(['alg' => 'RS256', 'typ' => 'JWT'], JSON_THROW_ON_ERROR));
+        $jwtClaimSet = self::base64UrlEncode(json_encode([
+            'iss' => $serviceAccount['client_email'],
+            'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
+            'aud' => 'https://oauth2.googleapis.com/token',
+            'exp' => $expires,
+            'iat' => $now,
+        ], JSON_THROW_ON_ERROR));
 
-            curl_setopt($ch, CURLOPT_URL, 'https://fcm.googleapis.com/fcm/send');
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $dataString);
+        $unsignedJwt = $jwtHeader . '.' . $jwtClaimSet;
+        $signature = '';
+        openssl_sign($unsignedJwt, $signature, $serviceAccount['private_key'], 'sha256');
+        $signedJwt = $unsignedJwt . '.' . self::base64UrlEncode($signature);
 
-            $response = curl_exec($ch);
-            return $response;
+        // Exchange JWT for access token
+        $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
+            'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+            'assertion' => $signedJwt,
+        ]);
+
+        if ($response->successful()) {
+            return $response->json()['access_token'];
+        } else {
+            return null;
         }
     }
+
+    private static function base64UrlEncode($data)
+    {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
+
     public static function shortenValue($value) {
         $abbreviations = ["", "K", "M", "B", "T"]; // Add more if needed
 

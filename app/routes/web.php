@@ -1,5 +1,6 @@
 <?php
 
+use App\helper\helper;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Home\HomeAuthController;
 use App\Http\Controllers\web\loginController;
@@ -30,6 +31,9 @@ Route::get('/clear', function() {
     Artisan::call('config:cache');
     Artisan::call('view:clear');
     return "Cleared!";
+});
+Route::get('/notification-test-send', function() {
+    return helper::sendNotification(1,"Title","Message");
 });
 
 Route::get('/', function () {

@@ -157,7 +157,7 @@
                                             <th class="text-center">Contact Number</th>
                                             <th class="text-center">Order Amount</th>
                                             <th class="text-center">Order Status</th>
-                                            <th class="text-center">Payment Status</th>
+{{--                                            <th class="text-center">Payment Status</th>--}}
                                             <th class="text-center noExport">action</th>
                                         </tr>
                                         </thead>

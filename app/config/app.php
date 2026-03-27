@@ -38,6 +38,7 @@ return [
 
     'env' => env('APP_ENV', 'production'),
 
+    'firebase_project_id' => env('FIREBASE_PROJECT_ID', ''),
     'firebase_server_key' => env('FIREBASE_SERVER_KEY', ''),
 
     'FIREBASE_API_KEY' => env('FIREBASE_API_KEY', ''),

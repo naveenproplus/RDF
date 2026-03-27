@@ -491,7 +491,8 @@ class OrderController extends Controller{
             );
         $Where=intval($this->LoginType)==2?" O.CreatedBy='".$this->UserID."'":" 1=1 ";
         $Where.=" and date(O.CreatedOn)>='".date("Y-m-d",strtotime($request->FromDate))."'";
-        $Where.=" and date(O.CreatedOn)<='".date("Y-m-d",strtotime($request->ToDate))."'";
+        $Where.=" and date(O.CreatedOn)>='".date("Y-m-d",strtotime($request->FromDate))."'";
+        $Where.=" and O.PaymentID != ''";
         if($request->User!=""){
             $Where.=" and CreatedBy='".$request->User."'";
         }

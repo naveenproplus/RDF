@@ -201,8 +201,8 @@ class dashboardController extends Controller
             array('db' => 'O.MobileNo1', 'dt' => '3'),
             array('db' => 'O.TotalAmount', 'dt' => '4'),
             array('db' => 'O.TrackStatus', 'dt' => '5'),
-            array('db' => 'O.PaymentID', 'dt' => '6'),
-            array('db' => 'O.OrderID', 'dt' => '7')
+//            array('db' => 'O.PaymentID', 'dt' => '6'),
+            array('db' => 'O.OrderID', 'dt' => '6')
         );
         $columns1 = array(
             array('db' => 'OrderNo', 'dt' => '0'),
@@ -241,20 +241,20 @@ class dashboardController extends Controller
                     }
                     return $Status;
                 }),
-            array(
-                'db' => 'PaymentID',
-                'dt' => '6',
-                'formatter' => function ($d, $row) {
-                    if ($d == "") {
-                        return '<span class="badge badge-warning">Pending</span>';
-                    } else {
-                        return '<span class="badge badge-success">Completed</span>';
-                    }
-                }
-            ),
+//            array(
+//                'db' => 'PaymentID',
+//                'dt' => '6',
+//                'formatter' => function ($d, $row) {
+//                    if ($d == "") {
+//                        return '<span class="badge badge-warning">Pending</span>';
+//                    } else {
+//                        return '<span class="badge badge-success">Completed</span>';
+//                    }
+//                }
+//            ),
             array(
                 'db' => 'OrderID',
-                'dt' => '7',
+                'dt' => '6',
                 'formatter' => function ($d, $row) {
                     $html = '<a href="' . route('admin.order.edit', $d) . '"><button type="button" data-id="' . $d . '" class="btn  btn-outline-success ' . $this->general->UserInfo['Theme']['button-size'] . ' mr-10 btnEdit" data-original-title="Edit"><i class="fa ' . (($row['TrackStatus'] === "Order Confirmed") ? "fa-pencil" : "fa-eye") . '"></i></button></a>';
                     if ($row['TrackStatus']) {
@@ -264,7 +264,7 @@ class dashboardController extends Controller
                 }
             )
         );
-        $Where = "";
+        $Where = "O.PaymentID != ''";
         $data = array();
         $data['POSTDATA'] = $request;
         $data['TABLE'] = "tbl_order as O";

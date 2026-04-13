@@ -498,12 +498,8 @@ class ProductHelper {
                                 }
                             }
                             if($status && count($tmpDetailIDs)>0){
-                                $sql="Select * From tbl_products_variation_details Where ProductID='".$ProductID."' and VariationID='".$VariationID."' and DetailID not in('".implode("','",$tmpDetailIDs)."') and DFlag=0";
-                                $t=DB::SELECT($sql);
-                                if(count($t)>0){
-                                    $sql="Update tbl_products_variation_details Set DFlag=1,DeletedOn='".date("Y-m-d H:i:s")."', DeletedBy='".$UserID."' Where ProductID='".$ProductID."' and VariationID='".$VariationID."' and DetailID not in('".implode("','",$tmpDetailIDs)."') and DFlag=0 ";
-                                    $status=DB::UPDATE($sql);
-                                }
+                                $sql="Delete From tbl_products_variation_details Where ProductID='".$ProductID."' and VariationID='".$VariationID."' and DetailID not in('".implode("','",$tmpDetailIDs)."')";
+                                DB::DELETE($sql);
                             }
                         }
                         if(count($Images->gallery)>0 && $status==true){

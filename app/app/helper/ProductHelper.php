@@ -527,12 +527,8 @@ class ProductHelper {
 
                 }
                 if($status==true && count($tmpVariationIDs)>0){
-                    $sql="Select * From tbl_products_variation Where ProductID='".$ProductID."' and  UUID not in('".implode("','",$tmpVariationIDs)."') and DFlag=0";
-                    $t=DB::SELECT($sql);
-                    if(count($t)>0){
-                        $sql="Update tbl_products_variation Set DFlag=1,DeletedOn='".date("Y-m-d H:i:s")."', DeletedBy='".$UserID."' Where ProductID='".$ProductID."' and UUID not in('".implode("','",$tmpVariationIDs)."') and DFlag=0 ";
-                        $status=DB::UPDATE($sql);
-                    }
+                    $sql="Delete From tbl_products_variation Where ProductID='".$ProductID."' and UUID not in('".implode("','",$tmpVariationIDs)."')";
+                    DB::DELETE($sql);
                 }
                 //Delete  uploaded Main && Variation Gallery Images
                 $DeletedImages=json_decode($req->deletedImages);

@@ -618,7 +618,7 @@ class CustomerAPIController extends Controller{
      * @return void
      * @throws Exception
      */
-    public function sendOtpSms(string $otp, Request $request): void
+    public function sendOtpSms(string $otp, Request $request): array
     {
         $TextLocal = new TextLocal();
         $message = "Your Royal Dry Fruits OTP for login is $otp. Please enter this code to proceed.";
@@ -626,12 +626,23 @@ class CustomerAPIController extends Controller{
 
         $textMsgResponse = $TextLocal->sendOTP($request->mobile_no, $message);
         if (!$textMsgResponse["status"]) {
-            $response['error'] = 1;
-            $response['message'] = $textMsgResponse['message'];
-            info($response['message']);
-            info('ERROR FOUND');
-            throw new Exception($response['message']);
+            $response = [
+                'error' => 1,
+                'message' => $textMsgResponse['message'] ?? 'OTP send failed',
+                'errors' => $textMsgResponse['errors'] ?? []
+            ];
+            info('OTP SMS delivery failed');
+            info($response);
+
+            // Do not block login if OTP SMS provider is temporarily unavailable.
+            if (config('app.OTP_SMS_STRICT', false)) {
+                throw new Exception($response['message']);
+            }
+
+            return ['status' => false, 'message' => $response['message'], 'errors' => $response['errors']];
         }
+
+        return ['status' => true, 'message' => 'OTP Sent Successfully'];
     }
 
     public function getTranslation(Request $request)

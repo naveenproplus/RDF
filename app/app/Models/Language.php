@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 class Language extends Model
 {
@@ -18,7 +19,14 @@ class Language extends Model
 
     public function scopeActive($query)
     {
-        return $query->whereStatus('Active');
+        $query->whereStatus('Active');
+
+        // Keep legacy soft-deleted rows out of API/web language lists.
+        if (Schema::hasColumn($this->getTable(), 'DFlag')) {
+            $query->where('DFlag', 0);
+        }
+
+        return $query;
     }
 
     public function translations()

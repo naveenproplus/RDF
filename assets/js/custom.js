@@ -77,7 +77,7 @@ const UploadImages = async () => {
             }
             const upload=async(formData)=>{
                 console.log(formData);
-                let uploadUrl = RootUrl+"tmp/upload-image?random="+ Math.floor(1000 + Math.random() * 9000);
+                let uploadUrl = RootUrl+"media/upload-image?random="+ Math.floor(1000 + Math.random() * 9000);
                 console.log(uploadUrl);
                 $.ajax({
                     type: "POST",
@@ -148,7 +148,7 @@ const ProductUploadImages = async () => {
                 console.log(formData);
                 $.ajax({
                     type: "post",
-                    url: RootUrl+"tmp/upload-image?random="+ Math.floor(1000 + Math.random() * 9000),
+                    url: RootUrl+"media/upload-image?random="+ Math.floor(1000 + Math.random() * 9000),
                     headers: {'X-CSRF-Token': $('meta[name=_token]').attr('content')},
                     data: formData,
                     dataType:"json",

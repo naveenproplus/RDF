@@ -11,6 +11,7 @@ use App\Traits\ApiResponse;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use mysql_xdevapi\Collection;
@@ -21,7 +22,19 @@ class MasterController extends Controller
 
 //    General Data
     public function latestMobileVersion(){
-        $data = MobileUpdate::first();
+        $query = MobileUpdate::query();
+
+        if (Schema::hasColumn('tbl_mobile_version', 'DFlag')) {
+            $query->where('DFlag', 0);
+        }
+        if (Schema::hasColumn('tbl_mobile_version', 'ActiveStatus')) {
+            $query->where('ActiveStatus', 'Active');
+        }
+        if (Schema::hasColumn('tbl_mobile_version', 'status')) {
+            $query->where('status', 'Active');
+        }
+
+        $data = $query->first();
         if($data){
             $data->forceUpdate = $data->update_type === "Force" ? 1 : 0;
             $data->Android = in_array($data->update_to, ['Android and IOS', 'Android']) ? 1 : 0;

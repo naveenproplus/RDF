@@ -531,13 +531,31 @@ class generalController extends Controller{
 		$dir="uploads/tmp/".date("Ymd")."/";
 		if (!file_exists( $dir)) {mkdir( $dir, 0777, true);}
 
+		$allowedImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+		$maxFileSize = 10 * 1024 * 1024; // 10 MB
+
 		if($req->hasFile('image')){
 			$file=$req->file('image');
-			$ext=$file->getClientOriginalExtension();
+			$ext=strtolower($file->getClientOriginalExtension());
+
+			if (!in_array($ext, $allowedImageExtensions)) {
+				return response()->json([
+					'status' => false,
+					'message' => 'Invalid image type. Allowed: ' . implode(', ', $allowedImageExtensions),
+				], 422);
+			}
+
+			if ($file->getSize() > $maxFileSize) {
+				return response()->json([
+					'status' => false,
+					'message' => 'Image size exceeds 10 MB limit.',
+				], 422);
+			}
+
 			$rnd=Helper::RandomString(10)."_".date("YmdHis");
 			$tname=md5($file->getClientOriginalName() . time());
-			$fileName=$tname. "." . $file->getClientOriginalExtension();
-			$fileName1 =  $tname. "-tmp." . $file->getClientOriginalExtension();
+			$fileName=$tname. "." . $ext;
+			$fileName1 =  $tname. "-tmp." . $ext;
 			$file->move($dir, $fileName1);
 			return array("uploadPath"=>$dir.$fileName1,"fileName"=>$fileName,"ext"=>$ext,"referData"=>$req->referData);
 		}elseif($req->image!=""){

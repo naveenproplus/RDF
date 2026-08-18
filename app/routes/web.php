@@ -59,7 +59,7 @@ Route::controller(generalController::class)->group(function () {
     Route::POST('/get/products', 'getProducts');
     Route::POST('/get/financial-years', 'getFinancialYear');
 
-    Route::post('/tmp/upload-image','tmpUploadImage');
+    Route::post('/media/upload-image', 'tmpUploadImage')->name('media.upload-image');
 
     Route::POST('/country/create-form','getNewCountry');
     Route::POST('/country/create','createCountry');

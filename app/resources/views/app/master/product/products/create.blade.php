@@ -1289,7 +1289,7 @@
 
             $.ajax({
                 type: "post",
-                url: "{{url('/')}}/tmp/upload-image?random="+ Math.floor(1000 + Math.random() * 9000),
+                url: "{{ route('media.upload-image') }}?random="+ Math.floor(1000 + Math.random() * 9000),
                 headers: {'X-CSRF-Token': $('meta[name=_token]').attr('content')},
                 data: formData,
                 cache: false,

@@ -349,24 +349,24 @@ class MasterController extends Controller
             $result = $products->select('P.ProductName', 'P.ProductID', 'PCT.PCTName', 'PCT.PCTID', 'PC.PCName', 'PC.PCID', 'PSC.PSCName', 'PSC.PSCID', 'U.UName', 'U.UCode', 'U.UID',
                 DB::raw('CONCAT("' . config('app.url') . '/", COALESCE(NULLIF(P.ProductImage, ""), "assets/images/no-image-b.png")) AS ProductImage'),
                 DB::raw('(SELECT CASE
-                       WHEN EXISTS (SELECT 1 FROM tbl_products_variation WHERE ProductID = P.ProductID)
-                       THEN (SELECT PRate FROM tbl_products_variation WHERE ProductID = P.ProductID ORDER BY SRate ASC LIMIT 1)
+                       WHEN EXISTS (SELECT 1 FROM tbl_products_variation WHERE ProductID = P.ProductID AND DFlag = 0)
+                       THEN (SELECT PRate FROM tbl_products_variation WHERE ProductID = P.ProductID AND DFlag = 0 ORDER BY SRate ASC LIMIT 1)
                        ELSE P.PRate
                      END) AS PRate'),
                 DB::raw('(SELECT CASE
-                       WHEN EXISTS (SELECT 1 FROM tbl_products_variation WHERE ProductID = P.ProductID) THEN MIN(PV.SRate)
+                       WHEN EXISTS (SELECT 1 FROM tbl_products_variation WHERE ProductID = P.ProductID AND DFlag = 0) THEN MIN(PV.SRate)
                        ELSE P.SRate
                      END
                      FROM tbl_products_variation AS PV
-                     WHERE PV.ProductID = P.ProductID) AS SRate'))
+                     WHERE PV.ProductID = P.ProductID AND PV.DFlag = 0) AS SRate'))
                 ->when($req->price_filter, function ($query) use ($req) {
                     $priceRange = explode(',', $req->price_filter);
                     return $query->whereRaw('(SELECT CASE
-                           WHEN EXISTS (SELECT 1 FROM tbl_products_variation WHERE ProductID = P.ProductID) THEN MIN(PV.SRate)
+                           WHEN EXISTS (SELECT 1 FROM tbl_products_variation WHERE ProductID = P.ProductID AND DFlag = 0) THEN MIN(PV.SRate)
                            ELSE P.SRate
                          END
                          FROM tbl_products_variation AS PV
-                         WHERE PV.ProductID = P.ProductID) BETWEEN ? AND ?', $priceRange);
+                         WHERE PV.ProductID = P.ProductID AND PV.DFlag = 0) BETWEEN ? AND ?', $priceRange);
                 })
                 ->when($req->has('sorting_by') && in_array($req->sorting_by, ['SRate', 'ProductName']), function ($query) use ($req) {
                     $sortingKey = $req->sorting_by;
@@ -381,10 +381,12 @@ class MasterController extends Controller
                 $item->SRate = Helper::formatAmount($item->SRate);
                 $item->unit = DB::table('tbl_products_variation')
                     ->where('tbl_products_variation.ProductID', $item->ProductID)
+                    ->where('tbl_products_variation.DFlag', 0)
                     ->where('tbl_products_variation.SRate', function ($query) use ($item) {
                         $query->select(DB::raw('min(SRate)'))
                             ->from('tbl_products_variation')
-                            ->where('ProductID', $item->ProductID);
+                            ->where('ProductID', $item->ProductID)
+                            ->where('DFlag', 0);
                     })
                     ->leftJoin('tbl_products_variation_details as D', function ($join) {
                         $join->on('tbl_products_variation.VariationID', '=', 'D.VariationID');
@@ -474,10 +476,12 @@ class MasterController extends Controller
                 $item->SRate = Helper::formatAmount($item->SRate);
                 $item->unit = DB::table('tbl_products_variation')
                     ->where('tbl_products_variation.ProductID', $item->ProductID)
+                    ->where('tbl_products_variation.DFlag', 0)
                     ->where('tbl_products_variation.SRate', function ($query) use ($item) {
                         $query->select(DB::raw('min(SRate)'))
                             ->from('tbl_products_variation')
-                            ->where('ProductID', $item->ProductID);
+                            ->where('ProductID', $item->ProductID)
+                            ->where('DFlag', 0);
                     })
                     ->leftJoin('tbl_products_variation_details as D', function ($join) {
                         $join->on('tbl_products_variation.VariationID', '=', 'D.VariationID');
@@ -506,18 +510,20 @@ class MasterController extends Controller
                 'UCode' => $product->UCode,
                 'UID' => $product->UID,
                 'ProductImage' => config('app.url') . '/' . (((!empty($product->ProductImage)) && file_exists($product->ProductImage)) ? $product->ProductImage : 'assets/images/no-image-b.png'),
-                'PRate' => Helper::formatAmount(DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->exists() ?
-                    DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->orderBy('SRate')->value('PRate') :
+                'PRate' => Helper::formatAmount(DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->where('DFlag', 0)->exists() ?
+                    DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->where('DFlag', 0)->orderBy('SRate')->value('PRate') :
                     $product->PRate),
-                'SRate' => Helper::formatAmount(DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->exists() ?
-                    DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->min('SRate') :
+                'SRate' => Helper::formatAmount(DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->where('DFlag', 0)->exists() ?
+                    DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->where('DFlag', 0)->min('SRate') :
                     $product->SRate),
                 'unit' => DB::table('tbl_products_variation')
                     ->where('tbl_products_variation.ProductID', $product->ProductID)
+                    ->where('tbl_products_variation.DFlag', 0)
                     ->where('tbl_products_variation.SRate', function ($query) use ($product) {
                         $query->select(DB::raw('min(SRate)'))
                             ->from('tbl_products_variation')
-                            ->where('ProductID', $product->ProductID);
+                            ->where('ProductID', $product->ProductID)
+                            ->where('DFlag', 0);
                     })
                     ->leftJoin('tbl_products_variation_details as D', function ($join) {
                         $join->on('tbl_products_variation.VariationID', '=', 'D.VariationID');
@@ -549,6 +555,7 @@ class MasterController extends Controller
             $variations = DB::table('tbl_products_variation')
                 ->select('VariationID', 'UUID', 'ProductID', 'Slug', 'Title', 'PRate', 'SRate')
                 ->where('ProductID', $product->ProductID)
+                ->where('DFlag', 0)
                 ->get();
 
             foreach ($variations as $variation) {
@@ -615,25 +622,25 @@ class MasterController extends Controller
                 'PCT.PCTID', 'PC.PCName', 'PC.PCNameInTranslation', 'PC.PCID', 'PSC.PSCName', 'PSC.PSCNameInTranslation', 'PSC.PSCID', 'U.UName', 'U.UNameInTranslation', 'U.UCode', 'U.UID',
                 DB::raw('CONCAT("' . config('app.url') . '/", COALESCE(NULLIF(P.ProductImage, ""), "assets/images/no-image-b.png")) AS ProductImage'),
                 DB::raw('(SELECT CASE
-                       WHEN EXISTS (SELECT 1 FROM tbl_products_variation WHERE ProductID = P.ProductID)
-                       THEN (SELECT PRate FROM tbl_products_variation WHERE ProductID = P.ProductID ORDER BY SRate ASC LIMIT 1)
+                       WHEN EXISTS (SELECT 1 FROM tbl_products_variation WHERE ProductID = P.ProductID AND DFlag = 0)
+                       THEN (SELECT PRate FROM tbl_products_variation WHERE ProductID = P.ProductID AND DFlag = 0 ORDER BY SRate ASC LIMIT 1)
                        ELSE P.PRate
                      END) AS PRate'),
                 DB::raw('(SELECT CASE
-                       WHEN EXISTS (SELECT 1 FROM tbl_products_variation WHERE ProductID = P.ProductID) THEN MIN(PV.SRate)
+                       WHEN EXISTS (SELECT 1 FROM tbl_products_variation WHERE ProductID = P.ProductID AND DFlag = 0) THEN MIN(PV.SRate)
                        ELSE P.SRate
                      END
                      FROM tbl_products_variation AS PV
-                     WHERE PV.ProductID = P.ProductID) AS SRate'),
+                     WHERE PV.ProductID = P.ProductID AND PV.DFlag = 0) AS SRate'),
                 DB::raw('IF(W.product_id IS NOT NULL, true, false) AS IsInWishlist'))
                 ->when($req->price_filter, function ($query) use ($req) {
                     $priceRange = explode(',', $req->price_filter);
                     return $query->whereRaw('(SELECT CASE
-                           WHEN EXISTS (SELECT 1 FROM tbl_products_variation WHERE ProductID = P.ProductID) THEN MIN(PV.SRate)
+                           WHEN EXISTS (SELECT 1 FROM tbl_products_variation WHERE ProductID = P.ProductID AND DFlag = 0) THEN MIN(PV.SRate)
                            ELSE P.SRate
                          END
                          FROM tbl_products_variation AS PV
-                         WHERE PV.ProductID = P.ProductID) BETWEEN ? AND ?', $priceRange);
+                         WHERE PV.ProductID = P.ProductID AND PV.DFlag = 0) BETWEEN ? AND ?', $priceRange);
                 })
                 ->when($req->has('sorting_by') && in_array($req->sorting_by, ['SRate', 'ProductName']), function ($query) use ($req) {
                     $sortingKey = $req->sorting_by;
@@ -660,10 +667,12 @@ class MasterController extends Controller
                 $item->SRate = Helper::formatAmount($item->SRate);
                 $item->unit = DB::table('tbl_products_variation')
                     ->where('tbl_products_variation.ProductID', $item->ProductID)
+                    ->where('tbl_products_variation.DFlag', 0)
                     ->where('tbl_products_variation.SRate', function ($query) use ($item) {
                         $query->select(DB::raw('min(SRate)'))
                             ->from('tbl_products_variation')
-                            ->where('ProductID', $item->ProductID);
+                            ->where('ProductID', $item->ProductID)
+                            ->where('DFlag', 0);
                     })
                     ->leftJoin('tbl_products_variation_details as D', function ($join) {
                         $join->on('tbl_products_variation.VariationID', '=', 'D.VariationID');
@@ -772,10 +781,12 @@ class MasterController extends Controller
                 $item->SRate = Helper::formatAmount($item->SRate);
                 $relatedProductsUnit = DB::table('tbl_products_variation')
                     ->where('tbl_products_variation.ProductID', $item->ProductID)
+                    ->where('tbl_products_variation.DFlag', 0)
                     ->where('tbl_products_variation.SRate', function ($query) use ($item) {
                         $query->select(DB::raw('min(SRate)'))
                             ->from('tbl_products_variation')
-                            ->where('ProductID', $item->ProductID);
+                            ->where('ProductID', $item->ProductID)
+                            ->where('DFlag', 0);
                     })
                     ->leftJoin('tbl_products_variation_details as D', function ($join) {
                         $join->on('tbl_products_variation.VariationID', '=', 'D.VariationID');
@@ -823,6 +834,7 @@ class MasterController extends Controller
             $variations = DB::table('tbl_products_variation')
                 ->select('VariationID', 'ProductID', 'PRate', 'SRate')
                 ->where('ProductID', $product->ProductID)
+                ->where('DFlag', 0)
                 ->get();
 
             foreach ($variations as $variation) {
@@ -866,10 +878,12 @@ class MasterController extends Controller
 
             $productUnit = DB::table('tbl_products_variation')
                 ->where('tbl_products_variation.ProductID', $product->ProductID)
+                ->where('tbl_products_variation.DFlag', 0)
                 ->where('tbl_products_variation.SRate', function ($query) use ($product) {
                     $query->select(DB::raw('min(SRate)'))
                         ->from('tbl_products_variation')
-                        ->where('ProductID', $product->ProductID);
+                        ->where('ProductID', $product->ProductID)
+                        ->where('DFlag', 0);
                 })
                 ->leftJoin('tbl_products_variation_details as D', function ($join) {
                     $join->on('tbl_products_variation.VariationID', '=', 'D.VariationID');
@@ -908,11 +922,11 @@ class MasterController extends Controller
                 'PSCName' => json_decode($product->PSCNameInTranslation)->$lang ?? $product->PSCName,
                 'PSCID' => $product->PSCID,
                 'ProductImage' => config('app.url') . '/' . (((!empty($product->ProductImage)) && file_exists($product->ProductImage)) ? $product->ProductImage : 'assets/images/no-image-b.png'),
-                'PRate' => Helper::formatAmount(DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->exists() ?
-                    DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->orderBy('SRate')->value('PRate') :
+                'PRate' => Helper::formatAmount(DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->where('DFlag', 0)->exists() ?
+                    DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->where('DFlag', 0)->orderBy('SRate')->value('PRate') :
                     $product->PRate),
-                'SRate' => Helper::formatAmount(DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->exists() ?
-                    DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->min('SRate') :
+                'SRate' => Helper::formatAmount(DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->where('DFlag', 0)->exists() ?
+                    DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->where('DFlag', 0)->min('SRate') :
                     $product->SRate),
                 'unit' => $productUnit,
                 'IsInWishlist' => DB::table('tbl_wishlists')->where('customer_id', $CustomerID)->where('product_id', $product->ProductID)->exists(),

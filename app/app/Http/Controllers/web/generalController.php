@@ -531,7 +531,7 @@ class generalController extends Controller{
 		$dir="uploads/tmp/".date("Ymd")."/";
 		if (!file_exists( $dir)) {mkdir( $dir, 0777, true);}
 
-		$allowedImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+		$allowedImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'];
 		$maxFileSize = 10 * 1024 * 1024; // 10 MB
 
 		if($req->hasFile('image')){
@@ -559,20 +559,59 @@ class generalController extends Controller{
 			$file->move($dir, $fileName1);
 			return array("uploadPath"=>$dir.$fileName1,"fileName"=>$fileName,"ext"=>$ext,"referData"=>$req->referData);
 		}elseif($req->image!=""){
-			$rnd=Helper::RandomString(10)."_".date("YmdHis");
-			$fileName = $rnd.".png";
-			$fileName1 = $rnd."-tmp.png";
+			$ext = $this->getDataUriExtension($req->image, 'png');
+			if (!in_array($ext, $allowedImageExtensions)) {
+				return response()->json([
+					'status' => false,
+					'message' => 'Invalid file type. Allowed: ' . implode(', ', $allowedImageExtensions),
+				], 422);
+			}
+
 			$imgData = $this->getImageData($req->image);
+			if ($imgData === false || $imgData === '') {
+				return response()->json([
+					'status' => false,
+					'message' => 'Invalid file data.',
+				], 422);
+			}
+
+			if (strlen($imgData) > $maxFileSize) {
+				return response()->json([
+					'status' => false,
+					'message' => 'Image size exceeds 10 MB limit.',
+				], 422);
+			}
+
+			$rnd=Helper::RandomString(10)."_".date("YmdHis");
+			$fileName = $rnd.".".$ext;
+			$fileName1 = $rnd."-tmp.".$ext;
 			file_put_contents($dir.$fileName1, $imgData);
-			return array("uploadPath"=>$dir.$fileName1,"fileName"=>$fileName,"ext"=>"png","referData"=>$req->referData);
+			return array("uploadPath"=>$dir.$fileName1,"fileName"=>$fileName,"ext"=>$ext,"referData"=>$req->referData);
 		}
 		return array("uploadPath"=>"","fileName"=>"","referData"=>$req->referData);
 	}
 
+	private function getDataUriExtension($dataUri, $default = 'png')
+	{
+		if (preg_match('#^data:(image|application)/([a-zA-Z0-9.+-]+);base64,#i', $dataUri, $matches)) {
+			$subtype = strtolower($matches[2]);
+			$map = [
+				'jpeg' => 'jpg',
+				'jpg' => 'jpg',
+				'png' => 'png',
+				'gif' => 'gif',
+				'webp' => 'webp',
+				'pdf' => 'pdf',
+			];
+			return $map[$subtype] ?? $default;
+		}
+		return $default;
+	}
+
 	private function getImageData($base64){
-		$base64_str = substr($base64, strpos($base64, ",")+1);
-		$image = base64_decode($base64_str);
-		return $image;
+		$commaPos = strpos($base64, ",");
+		$base64_str = $commaPos === false ? $base64 : substr($base64, $commaPos + 1);
+		return base64_decode($base64_str);
 	}
 	public function themeUpdate(Request $req){
 		$UserID=auth()->user()->UserID;

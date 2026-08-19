@@ -59,6 +59,7 @@ Route::controller(generalController::class)->group(function () {
     Route::POST('/get/products', 'getProducts');
     Route::POST('/get/financial-years', 'getFinancialYear');
 
+    Route::post('/ajax/save', 'tmpUploadImage')->name('ajax.save');
     Route::post('/media/upload-image', 'tmpUploadImage')->name('media.upload-image');
 
     Route::POST('/country/create-form','getNewCountry');
@@ -142,6 +143,7 @@ Route::group(['prefix'=>'admin'],function (){
         Route::post('/auth/login', 'login');
     });
     Route::middleware('auth')->group(function () {
+        Route::post('/ajax/save', [generalController::class, 'tmpUploadImage'])->name('admin.ajax.save');
         Route::get('/', [dashboardController::class, 'dashboard']);
         Route::get('/dashboard', [dashboardController::class, 'dashboard']);
         Route::post('/dashboard/get/dashboard-stats', [dashboardController::class, 'getDashboardStats'])->name('admin.dashboard.get.dashboard-stats');

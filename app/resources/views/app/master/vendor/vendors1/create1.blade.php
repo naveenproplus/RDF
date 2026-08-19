@@ -958,14 +958,12 @@
             return uuid;
         }
         const tmpImageUpload=async(formData)=>{
+            const payload = await normalizeUploadPayload(formData);
             $.ajax({
                 type: "post",
-                url: "{{ route('media.upload-image') }}?random="+ Math.floor(1000 + Math.random() * 9000),
-                headers: {'X-CSRF-Token': $('meta[name=_token]').attr('content')},
-                data: formData,
-                cache: false,
-                contentType: false,
-                processData: false,
+                url: "{{ url('/api/tmp/file-upload') }}",
+                headers: {'X-CSRF-TOKEN': $('meta[name=_token]').attr('content')},
+                data: payload,
                 dataType:"json",
                 async:true,
                 error: function(e, x, settings, exception) {ajaxErrors(e, x, settings, exception);},

@@ -173,7 +173,7 @@ class GeneralAPIController extends Controller{
 		$dir="uploads/tmp/".date("Ymd")."/";
 		if (!file_exists( $dir)) {mkdir( $dir, 0777, true);}
 
-		$allowedImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'];
+		$allowedImageExtensions = ['jpg', 'jpeg', 'png'];
 		$allowedDocExtensions = ['pdf', 'doc', 'docx', 'txt','jpg', 'jpeg'];
 		$maxFileSize = 10 * 1024 * 1024; // 10 MB
 
@@ -197,19 +197,10 @@ class GeneralAPIController extends Controller{
 			}
 		} elseif ($req->image != "") {
 			$rnd = Helper::RandomString(10) . "_" . date("YmdHis");
-			$originalExtension = $this->getDataUriExtension($req->image, 'png');
-			if (!in_array($originalExtension, $allowedImageExtensions)) {
-				return array('status' => false, 'message' => 'Image upload failed', 'errors' => 'Invalid image extension. Allowed extensions: ' . implode(', ', $allowedImageExtensions));
-			}
+			$originalExtension = strtolower(pathinfo($req->image, PATHINFO_EXTENSION));
 			$fileName = $rnd . "." . $originalExtension;
 			$fileName1 = $rnd . "-tmp." . $originalExtension;
 			$imgData = $this->getImageData($req->image);
-			if ($imgData === false || $imgData === '') {
-				return array('status' => false, 'message' => 'Image upload failed', 'errors' => 'Invalid image data.');
-			}
-			if (strlen($imgData) > $maxFileSize) {
-				return array('status' => false, 'message' => 'Image upload failed', 'errors' => 'Image size exceeds the maximum allowed size of ' . ($maxFileSize / 1024 / 1024) . ' MB.');
-			}
 			file_put_contents($dir . $fileName1, $imgData);
 			return array("uploadPath" => $dir . $fileName1, "fileName" => $fileName, "ext" => $originalExtension, "referData" => $req->referData);
 		}
@@ -242,25 +233,8 @@ class GeneralAPIController extends Controller{
 		}
 		return array("uploadPath" => "", "fileName" => "", "referData" => $req->referData);
 	}
-	private function getDataUriExtension($dataUri, $default = 'png')
-	{
-		if (preg_match('#^data:(image|application)/([a-zA-Z0-9.+-]+);base64,#i', $dataUri, $matches)) {
-			$subtype = strtolower($matches[2]);
-			$map = [
-				'jpeg' => 'jpg',
-				'jpg' => 'jpg',
-				'png' => 'png',
-				'gif' => 'gif',
-				'webp' => 'webp',
-				'pdf' => 'pdf',
-			];
-			return $map[$subtype] ?? $default;
-		}
-		return $default;
-	}
 	private function getImageData($base64){
-		$commaPos = strpos($base64, ",");
-		$base64_str = $commaPos === false ? $base64 : substr($base64, $commaPos + 1);
+		$base64_str = substr($base64, strpos($base64, ",")+1);
 		$image = base64_decode($base64_str);
 		return $image;
 	}

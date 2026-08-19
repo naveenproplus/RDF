@@ -1,30 +1,3 @@
-const fileToDataUrl = (file) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-});
-
-const normalizeUploadPayload = async (formData) => {
-    if (!(formData instanceof FormData)) {
-        return formData;
-    }
-    const payload = {};
-    formData.forEach((value, key) => {
-        payload[key] = value;
-    });
-    if (payload.image instanceof File) {
-        payload.image = await fileToDataUrl(payload.image);
-    }
-    payload._token = $('meta[name=_token]').attr('content');
-    return payload;
-};
-
-const getAdminAjaxSaveUrl = () => {
-    const root = ($('#txtRootUrl').val() || '/').replace(/\/?$/, '/');
-    return root + 'api/tmp/file-upload';
-};
-
 const NumberFormat=(value,type)=>{
     try {
         if((value=="")||(value==undefined)||(isNaN(parseFloat(value)))){
@@ -104,7 +77,7 @@ const UploadImages = async () => {
             }
             const upload=async(formData)=>{
                 console.log(formData);
-                let uploadUrl = getAdminAjaxSaveUrl();
+                let uploadUrl = RootUrl+"tmp/upload-image?random="+ Math.floor(1000 + Math.random() * 9000);
                 console.log(uploadUrl);
                 $.ajax({
                     type: "POST",
@@ -175,7 +148,7 @@ const ProductUploadImages = async () => {
                 console.log(formData);
                 $.ajax({
                     type: "post",
-                    url: getAdminAjaxSaveUrl(),
+                    url: RootUrl+"tmp/upload-image?random="+ Math.floor(1000 + Math.random() * 9000),
                     headers: {'X-CSRF-Token': $('meta[name=_token]').attr('content')},
                     data: formData,
                     dataType:"json",

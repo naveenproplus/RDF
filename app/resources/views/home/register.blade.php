@@ -412,7 +412,7 @@
                         console.log(formData);
                         $.ajax({
                             type: "post",
-                            url: RootUrl+"api/tmp/file-upload",
+                            url: RootUrl+"tmp/upload-image",
                             headers: {'X-CSRF-Token': $('meta[name=_token]').attr('content')},
                             data: formData,
                             dataType:"json",

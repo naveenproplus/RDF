@@ -1653,7 +1653,7 @@ class CustomerAuthController extends Controller{
                         "CustomerID" => $CustomerID,
                         "OrderID" => $OrderID,
                         "Status" => "Order Confirmed",
-                        "Description" => "Your Order Has Been Confirmed, You Will Receive Shipped Within 4 To 5 Working Days",
+                        "Description" => "Your Order Has Been Confirmed, You Will Receive Shipped Within 24Hrs",
                         "StatusDate" => Carbon::now(),
                         "orderBy" => 1,
                         "UpdatedBy" => $CustomerID

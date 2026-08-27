@@ -751,7 +751,7 @@ class OrderController extends Controller{
                     "UpdatedOn" => date("Y-m-d H:i:s")
                 );
                 $Order = Order::where('OrderID', $OrderID)->update($data);
-                $Description = "Your Order Has Been Shipped, You Will Receive Shipped Within 2 To 3 Days";
+                $Description = "Your Order Has Been Shipped, You Will Receive Shipped Within 24Hrs";
                 $Title = "Shipment update";
                 $Message = "Your Order shipped successfully";
                 CustomerOrderTrack::where('OrderID', $OrderID)->where('Status', "Shipped")

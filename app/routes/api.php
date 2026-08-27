@@ -18,6 +18,11 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+// Open list of products missing images (for design team) — no auth
+Route::match(['get', 'post'], '/tools/missing-product-images', [\App\Http\Controllers\api\ProductAiImageController::class, 'missing']);
+Route::match(['get', 'post'], '/tools/ai-product-images/eligible', [\App\Http\Controllers\api\ProductAiImageController::class, 'eligible']);
+Route::post('/tools/ai-product-images/generate', [\App\Http\Controllers\api\ProductAiImageController::class, 'generate']);
+
 //Route::group(['prefix'=>'customer'],function (){
     require __DIR__.'/api/customer/customer-api.php';
 //});

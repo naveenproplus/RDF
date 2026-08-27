@@ -66,6 +66,22 @@ return [
 //  Google Review
     'GOOGLE_REVIEW_URL' => env('GOOGLE_REVIEW_URL', ''),
 
+//  Gemini AI product images
+    // AI product images: openai (ChatGPT/DALL-E API) or gemini
+    'AI_IMAGE_PROVIDER' => env('AI_IMAGE_PROVIDER', 'openai'),
+    'AI_IMAGE_TOOL_TOKEN' => env('AI_IMAGE_TOOL_TOKEN', env('GEMINI_IMAGE_TOOL_TOKEN', '')),
+
+    'OPENAI_API_KEY' => env('OPENAI_API_KEY', ''),
+    'OPENAI_IMAGE_MODEL' => env('OPENAI_IMAGE_MODEL', 'gpt-image-1'),
+    'OPENAI_IMAGE_SIZE' => env('OPENAI_IMAGE_SIZE', '1024x1024'),
+    'OPENAI_IMAGE_QUALITY' => env('OPENAI_IMAGE_QUALITY', 'medium'),
+
+    'GEMINI_API_KEY' => env('GEMINI_API_KEY', ''),
+    'GEMINI_IMAGE_MODEL' => env('GEMINI_IMAGE_MODEL', 'gemini-2.5-flash-image'),
+    'GEMINI_IMAGE_TOOL_TOKEN' => env('GEMINI_IMAGE_TOOL_TOKEN', ''),
+
+//  Gemini AI product images
+
     /*
     |--------------------------------------------------------------------------
     | Application Debug Mode

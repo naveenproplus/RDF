@@ -666,14 +666,80 @@ class helper{
 
 		return $string;
 	}
+	/**
+	 * Resolve product image path for display.
+	 * Prefer absolute path under document root (repo root / uploads) — PHP CWD is unreliable under FPM/artisan.
+	 */
+	public static function productImageAbsolutePath(?string $url): ?string
+	{
+		if ($url === null) {
+			return null;
+		}
+		$url = trim(str_replace('\\', '/', $url));
+		if ($url === '') {
+			return null;
+		}
+		if (preg_match('#^(https?:)?//#i', $url) || str_starts_with($url, '/')) {
+			return $url;
+		}
+		// Document root = parent of Laravel (index.php + uploads/)
+		return rtrim(dirname(base_path()), '/\\') . '/' . ltrim($url, '/');
+	}
+
+	public static function productImageFileExists(?string $url): bool
+	{
+		if ($url === null) {
+			return false;
+		}
+		$url = trim(str_replace('\\', '/', $url));
+		if ($url === '') {
+			return false;
+		}
+
+		$lower = strtolower($url);
+		if (
+			str_contains($lower, 'no-image')
+			|| str_contains($lower, 'no_image')
+			|| str_contains($lower, 'no-images')
+			|| str_contains($lower, 'placeholder')
+		) {
+			return false;
+		}
+
+		if (@is_file($url)) {
+			return true;
+		}
+
+		$candidates = [
+			self::productImageAbsolutePath($url),
+		];
+		if (!empty($_SERVER['DOCUMENT_ROOT'])) {
+			$candidates[] = rtrim((string) $_SERVER['DOCUMENT_ROOT'], '/\\') . '/' . ltrim($url, '/');
+		}
+
+		foreach ($candidates as $abs) {
+			if ($abs && !preg_match('#^(https?:)?//#i', (string) $abs) && @is_file((string) $abs)) {
+				return true;
+			}
+		}
+
+		// PHP-FPM open_basedir often blocks is_file() outside /app even when the
+		// file is web-reachable under /uploads. Trust real upload paths from DB.
+		if (str_starts_with($url, 'uploads/')) {
+			return true;
+		}
+
+		return false;
+	}
+
 	public static function checkProductImageExists($url){
-		$image=file_exists($url)?$url:"assets/images/no-images.jpg";
+		$image = self::productImageFileExists($url) ? $url : "assets/images/no-images.jpg";
 		return $image;
 	}
 
     public static function apiCheckImageExistsUrl($url)
     {
-        return config('app.url') . "/" . (file_exists($url) ? $url : "assets/images/no-images.jpg");
+        return rtrim((string) config('app.url'), '/') . "/" . (self::productImageFileExists($url) ? ltrim((string) $url, '/') : "assets/images/no-images.jpg");
     }
 
 	public static function getVehicleType($data=array()){

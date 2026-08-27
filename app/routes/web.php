@@ -40,6 +40,10 @@ Route::get('/', function () {
     return Redirect::to('/admin');
 });
 
+// Open list of products missing images (for design team) — no auth
+Route::match(['get', 'post'], '/tools/missing-product-images', [\App\Http\Controllers\api\ProductAiImageController::class, 'missing']);
+Route::match(['get', 'post'], '/missing-product-images', [\App\Http\Controllers\api\ProductAiImageController::class, 'missing']);
+
 Route::controller(generalController::class)->group(function () {
     Route::post('/get/country','getCountry');
     Route::post('/get/states','getState');

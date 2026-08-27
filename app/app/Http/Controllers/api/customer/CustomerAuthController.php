@@ -260,7 +260,7 @@ class CustomerAuthController extends Controller{
             $item->PCTName = json_decode($item->PCTNameInTranslation)->$lang ?? $item->PCTName;
             $item->PCName = json_decode($item->PCNameInTranslation)->$lang ?? $item->PCName;
             $item->PSCName = json_decode($item->PSCNameInTranslation)->$lang ?? $item->PSCName;
-            $item->ProductImage = file_exists($item->ProductImage) ? url($item->ProductImage) : url("assets/images/no-image-b.png");
+            $item->ProductImage = Helper::productImageFileExists($item->ProductImage) ? url($item->ProductImage) : url("assets/images/no-image-b.png");
             $product_rate = $item->SRate * $item->Qty;
             $item->PTotalRate = Helper::formatAmount($product_rate);
             $item->PRate = Helper::formatAmount($item->PRate);
@@ -1087,7 +1087,7 @@ class CustomerAuthController extends Controller{
                 $item->PCName = json_decode($item->PCNameInTranslation)->$lang ?? $item->PCName;
                 $item->PSCName = json_decode($item->PSCNameInTranslation)->$lang ?? $item->PSCName;
 
-                $item->ProductImage = file_exists($item->ProductImage) ? url($item->ProductImage) : url("assets/images/no-image-b.png");
+                $item->ProductImage = Helper::productImageFileExists($item->ProductImage) ? url($item->ProductImage) : url("assets/images/no-image-b.png");
                 $product_rate = $item->SRate * $item->Qty;
                 $item->PTotalRate = Helper::formatAmount($product_rate);
                 $item->PRate = Helper::formatAmount($item->PRate);

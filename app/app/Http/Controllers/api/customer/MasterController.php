@@ -509,7 +509,7 @@ class MasterController extends Controller
                 'UName' => $product->UName,
                 'UCode' => $product->UCode,
                 'UID' => $product->UID,
-                'ProductImage' => config('app.url') . '/' . (((!empty($product->ProductImage)) && file_exists($product->ProductImage)) ? $product->ProductImage : 'assets/images/no-image-b.png'),
+                'ProductImage' => Helper::apiCheckImageExistsUrl($product->ProductImage ?? ''),
                 'PRate' => Helper::formatAmount(DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->where('DFlag', 0)->exists() ?
                     DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->where('DFlag', 0)->orderBy('SRate')->value('PRate') :
                     $product->PRate),
@@ -921,7 +921,7 @@ class MasterController extends Controller
                 'PCID' => $product->PCID,
                 'PSCName' => json_decode($product->PSCNameInTranslation)->$lang ?? $product->PSCName,
                 'PSCID' => $product->PSCID,
-                'ProductImage' => config('app.url') . '/' . (((!empty($product->ProductImage)) && file_exists($product->ProductImage)) ? $product->ProductImage : 'assets/images/no-image-b.png'),
+                'ProductImage' => Helper::apiCheckImageExistsUrl($product->ProductImage ?? ''),
                 'PRate' => Helper::formatAmount(DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->where('DFlag', 0)->exists() ?
                     DB::table('tbl_products_variation')->where('ProductID', $product->ProductID)->where('DFlag', 0)->orderBy('SRate')->value('PRate') :
                     $product->PRate),

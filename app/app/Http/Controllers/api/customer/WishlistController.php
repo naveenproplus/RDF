@@ -146,7 +146,7 @@ class WishlistController extends Controller
                             DB::table('tbl_products_variation')->where('ProductID', $productDetails->ProductID)->min('SRate') :
                             $productDetails->SRate),
                         'unit' => $productUnit,
-                        'ProductImage' => config('app.url') . '/' . ((!empty($productDetails->ProductImage) && file_exists($productDetails->ProductImage)) ? $productDetails->ProductImage : 'assets/images/no-image-b.png'),
+                        'ProductImage' => Helper::apiCheckImageExistsUrl($productDetails->ProductImage ?? ''),
                     ];
                 }
             }

@@ -844,22 +844,27 @@ class helper{
     }
 
     public static function saveNotification($ReferID,$Title,$Message,$Route,$RouteID){
-        $UserID = DB::table('tbl_customer')->where('CustomerID',$ReferID)->value('CustomerID');
-        $NID = DocNum::getDocNum("Notification", Helper::getMainDB(),Carbon::now()->year);
-        $Ndata = [
-            'NID'=> $NID,
-            'CustomerID'=> $UserID,
-            'Title'=> $Title,
-            'Message'=> $Message,
-            'Route'=> $Route,
-            'RouteID'=> $RouteID
-        ];
-        $status = DB::table('tbl_notifications')->insert($Ndata);
-        if($status){
-            DocNum::updateDocNum("Notification");
-            self::sendNotification($UserID,$Title,$Message);
+        try {
+            $UserID = DB::table('tbl_customer')->where('CustomerID',$ReferID)->value('CustomerID');
+            $NID = DocNum::getDocNum("Notification", Helper::getMainDB(),Carbon::now()->year);
+            $Ndata = [
+                'NID'=> $NID,
+                'CustomerID'=> $UserID,
+                'Title'=> $Title,
+                'Message'=> $Message,
+                'Route'=> $Route,
+                'RouteID'=> $RouteID
+            ];
+            $status = DB::table('tbl_notifications')->insert($Ndata);
+            if($status){
+                DocNum::updateDocNum("Notification");
+                self::sendNotification($UserID,$Title,$Message);
+            }
+            return $status;
+        } catch (\Throwable $e) {
+            logger($e);
+            return false;
         }
-        return $status;
     }
 
     /**
@@ -880,6 +885,11 @@ class helper{
         if (empty($result)) return 'No valid tokens found.';
 
         $serviceAccountPath = storage_path('app/firebase/firebase_credentials.json');
+        if (!file_exists($serviceAccountPath)) {
+            logger('Firebase credentials missing: ' . $serviceAccountPath);
+            return 'Firebase credentials file not found.';
+        }
+
         $projectId = config('app.firebase_project_id');
 
         $accessToken = self::generateAccessToken($serviceAccountPath);
@@ -918,6 +928,11 @@ class helper{
      */
     public static function generateAccessToken($serviceAccountPath)
     {
+        if (!file_exists($serviceAccountPath)) {
+            logger('Firebase credentials missing: ' . $serviceAccountPath);
+            return null;
+        }
+
         $serviceAccount = json_decode(file_get_contents($serviceAccountPath), true, 512, JSON_THROW_ON_ERROR);
 
         $now = time();

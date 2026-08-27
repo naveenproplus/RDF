@@ -1684,8 +1684,16 @@ class CustomerAuthController extends Controller{
 //                Mail::to($orderDetails->Email)->send(new OrderMail("Confirmation", 'orderDetails', 'companyDetails', 'locationDetails', 'logo'));
                 $Title = "Order Place Successfully";
                 $Message = "Your Order placed successfully";
-                Helper::saveNotification($CustomerID, $Title, $Message, 'Order', $OrderID);
-                SaleRegisterInBusyJob::dispatchSync($OrderID);
+                try {
+                    Helper::saveNotification($CustomerID, $Title, $Message, 'Order', $OrderID);
+                } catch (\Throwable $e) {
+                    logger($e);
+                }
+                try {
+                    SaleRegisterInBusyJob::dispatchSync($OrderID);
+                } catch (\Throwable $e) {
+                    logger($e);
+                }
                 DB::commit();
                 return $this->successResponse([], "Payment Status Successfully Updated");
             } else {

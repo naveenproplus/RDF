@@ -740,7 +740,12 @@ class OrderController extends Controller{
             DB::beginTransaction();
             try {
                 $OldData = Order::where('OrderID', $OrderID)->first();
+                if (!$OldData) {
+                    DB::rollBack();
+                    return array('status' => false, 'message' => "Order not found");
+                }
                 if (!$OldData->PaymentID) {
+                    DB::rollBack();
                     return array('status' => false, 'message' => "Payment not completed. So, This Request can't be processed!");
                 }
                 $data = array(
@@ -750,25 +755,49 @@ class OrderController extends Controller{
                     "UpdatedBy" => $this->UserID,
                     "UpdatedOn" => date("Y-m-d H:i:s")
                 );
-                $Order = Order::where('OrderID', $OrderID)->update($data);
+                Order::where('OrderID', $OrderID)->update($data);
                 $Description = "Your Order Has Been Shipped, You Will Receive Shipped Within 24Hrs";
                 $Title = "Shipment update";
                 $Message = "Your Order shipped successfully";
-                CustomerOrderTrack::where('OrderID', $OrderID)->where('Status', "Shipped")
-                    ->update(["Description" => $Description, "StatusDate" => Carbon::now(), "UpdatedBy" => $this->UserID]);
-//                [$orderDetails, $logo, $companyDetails, $locationDetails] = $this->generateMailData($OrderID);
-//                Mail::to($Order->Email)->send(new OrderMail("Shipment", 'orderDetails', 'companyDetails', 'locationDetails', 'logo'));
 
-                Helper::saveNotification($OldData->CreatedBy, $Title, $Message, 'Order', $OrderID);
+                $shippedTrack = CustomerOrderTrack::where('OrderID', $OrderID)->where('Status', "Shipped")->first();
+                if ($shippedTrack) {
+                    $shippedTrack->update([
+                        "Description" => $Description,
+                        "StatusDate" => Carbon::now(),
+                        "UpdatedBy" => $this->UserID
+                    ]);
+                } else {
+                    CustomerOrderTrack::create([
+                        "CustomerID" => $OldData->CreatedBy,
+                        "OrderID" => $OrderID,
+                        "Status" => "Shipped",
+                        "Description" => $Description,
+                        "StatusDate" => Carbon::now(),
+                        "orderBy" => 2,
+                        "UpdatedBy" => $this->UserID
+                    ]);
+                }
+
+                try {
+                    Helper::saveNotification($OldData->CreatedBy, $Title, $Message, 'Order', $OrderID);
+                } catch (\Throwable $e) {
+                    logger($e);
+                }
+
                 $NewData = Order::where('OrderID', $OrderID)->get();
                 $logData = array("Description" => "Order Track Status Updated", "ModuleName" => $this->ActiveMenuName, "Action" => cruds::UPDATE->value, "ReferID" => $OrderID, "OldData" => $OldData, "NewData" => $NewData, "UserID" => $this->UserID, "IP" => $req->ip());
-                logController::Store($logData);
+                try {
+                    logController::Store($logData);
+                } catch (\Throwable $e) {
+                    logger($e);
+                }
                 DB::commit();
                 return array('status' => true, 'message' => "Track Status Updated Successfully");
-            } catch (Exception $e) {
+            } catch (\Throwable $e) {
                 logger($e);
                 DB::rollback();
-                return array('status' => false, 'message' => "Track Status Update Failed");
+                return array('status' => false, 'message' => "Track Status Update Failed", 'errors' => $e->getMessage());
             }
         } else {
             return array('status' => false, 'message' => 'Access denied');

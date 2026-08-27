@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\web\logController;
 use App\Models\Customer;
 use App\Models\Language;
-use App\Models\TextLocal;
+use App\Services\SmsAlertService;
 use App\Traits\ApiResponse;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -620,11 +620,10 @@ class CustomerAPIController extends Controller{
      */
     public function sendOtpSms(string $otp, Request $request): array
     {
-        $TextLocal = new TextLocal();
+        $smsService = new SmsAlertService();
         $message = "Your Royal Dry Fruits OTP for login is $otp. Please enter this code to proceed.";
-//        $message = "You are trying to change your mobile number in the RPC software. Please enter $otp code to verify your request.";
 
-        $textMsgResponse = $TextLocal->sendOTP($request->mobile_no, $message);
+        $textMsgResponse = $smsService->sendOTP($request->mobile_no, $message);
         if (!$textMsgResponse["status"]) {
             $response = [
                 'error' => 1,

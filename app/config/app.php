@@ -50,7 +50,14 @@ return [
     'FIREBASE_APP_ID' => env('FIREBASE_APP_ID', ''),
     'FIREBASE_MEASUREMENT_ID' => env('FIREBASE_MEASUREMENT_ID', ''),
 
-// TEXT LOCAL
+// SMS Alert (falls back to legacy SMS_* env keys if present)
+    'SMS_ALERT_API_KEY' => env('SMS_ALERT_API_KEY', env('SMS_API_KEY', '')),
+    'SMS_ALERT_SENDER_ID' => env('SMS_ALERT_SENDER_ID', env('SMS_SENDER_NAME', '')),
+    'SMS_ALERT_USERNAME' => env('SMS_ALERT_USERNAME', ''),
+    'SMS_ALERT_ROUTE' => env('SMS_ALERT_ROUTE', ''),
+    'OTP_SMS_STRICT' => env('OTP_SMS_STRICT', false),
+
+// TEXT LOCAL (legacy)
     'TEXT_LOCAL_API_KEY' => env('TEXT_LOCAL_API_KEY', ''),
     'TEXT_LOCAL_SENDER_NAME' => env('TEXT_LOCAL_SENDER_NAME', ''),
 

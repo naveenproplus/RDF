@@ -18,6 +18,7 @@ class CustomerCart extends Model
         "CartID",
         "CustomerID",
         "ProductID",
-        "ProductVariationID"
+        "ProductVariationID",
+        "Qty",
     ];
 }

@@ -338,6 +338,7 @@ class CustomerAuthController extends Controller{
             $validatedData = Validator::make($request->all(), [
                 'ProductID' => 'required|string|exists:tbl_products,ProductID',
                 'ProductVariationID' => 'nullable|string|exists:tbl_products_variation,VariationID',
+                'Qty' => 'nullable|integer|min:1',
             ]);
 
             if ($validatedData->fails()) {
@@ -345,15 +346,25 @@ class CustomerAuthController extends Controller{
             }
 
             $ProductID = $request->ProductID;
-            $ProductVariationID = $request->ProductVariationID;
+            $ProductVariationID = $request->ProductVariationID ?: null;
             $CustomerID = $customer->CustomerID;
-            $cart = CustomerCart::firstOrCreate(['CustomerID' => $CustomerID, 'ProductID' => $ProductID,
-                'ProductVariationID' => $ProductVariationID]);
+            $Qty = (int) ($request->Qty ?? 1);
+
+            $cart = CustomerCart::firstOrNew([
+                'CustomerID' => $CustomerID,
+                'ProductID' => $ProductID,
+                'ProductVariationID' => $ProductVariationID,
+            ]);
+
+            $isNew = !$cart->exists;
+            $cart->Qty = $Qty;
+            $cart->save();
+
             DB::commit();
-            if ($cart->wasRecentlyCreated) {
+            if ($isNew) {
                 return $this->successResponse([], "Product added to Cart Successfully");
             }
-            return $this->errorResponse([], "Product already exists!", 422);
+            return $this->successResponse([], "Product quantity updated Successfully");
         } catch (Exception $e) {
             logger($e);
             DB::rollback();

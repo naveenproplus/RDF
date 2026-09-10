@@ -320,7 +320,9 @@ class MasterController extends Controller
             $products = DB::table('tbl_products as P')
                 ->join('tbl_product_category_type as PCT', 'PCT.PCTID', 'P.CTID')->join('tbl_product_category as PC', 'PC.PCID', 'P.CID')
                 ->join('tbl_product_subcategory as PSC', 'PSC.PSCID', 'P.SCID')->join('tbl_uom as U', 'U.UID', 'P.UID')
-                ->where('P.ActiveStatus', 'Active')->where('P.DFlag', 0)->where('PC.ActiveStatus', 'Active')
+                ->where('P.ActiveStatus', 'Active')->where('P.DFlag', 0)
+                ->where('PCT.ActiveStatus', 'Active')->where('PCT.DFlag', 0)
+                ->where('PC.ActiveStatus', 'Active')
                 ->where('PC.DFlag', 0)->where('PSC.ActiveStatus', 'Active')->where('PSC.DFlag', 0)
                 ->when($req->PID, function ($query) use ($req) {
                     $PID = $req->PID;
@@ -343,7 +345,11 @@ class MasterController extends Controller
                     return $query->whereIn('P.SCID', $PSCIDs);
                 })
                 ->when($req->has('SearchText') && !empty($req->SearchText), function ($query) use ($req) {
-                    return $query->where('P.ProductName', 'like', '%' . $req->SearchText . '%');
+                    $search = $req->SearchText;
+                    return $query->where(function ($q) use ($search) {
+                        $q->where('P.ProductName', 'like', '%' . $search . '%')
+                            ->orWhere('P.ProductNameInTranslation', 'like', '%' . $search . '%');
+                    });
                 });
 
             $result = $products->select('P.ProductName', 'P.ProductID', 'PCT.PCTName', 'PCT.PCTID', 'PC.PCName', 'PC.PCID', 'PSC.PSCName', 'PSC.PSCID', 'U.UName', 'U.UCode', 'U.UID',
@@ -431,12 +437,18 @@ class MasterController extends Controller
                 ->join('tbl_uom as U', 'U.UID', 'P.UID')
                 ->where('P.ActiveStatus', 'Active')
                 ->where('P.DFlag', 0)
+                ->where('PCT.ActiveStatus', 'Active')
+                ->where('PCT.DFlag', 0)
                 ->where('PC.ActiveStatus', 'Active')
                 ->where('PC.DFlag', 0)
                 ->where('PSC.ActiveStatus', 'Active')
                 ->where('PSC.DFlag', 0)
                 ->where('P.ProductID', $req->ProductID)
                 ->first();
+
+            if (!$product) {
+                return $this->errorResponse('Product not found', 'Product not found', 404);
+            }
 
             $reviews = ProductReview::with('customerDetails')->where('ProductID', $product->ProductID)
                 ->orderBy('CreatedOn', 'desc')
@@ -592,7 +604,9 @@ class MasterController extends Controller
                     $join->on('W.product_id', '=', 'P.ProductID')
                         ->where('W.customer_id', '=', $customerID);
                 })
-                ->where('P.ActiveStatus', 'Active')->where('P.DFlag', 0)->where('PC.ActiveStatus', 'Active')
+                ->where('P.ActiveStatus', 'Active')->where('P.DFlag', 0)
+                ->where('PCT.ActiveStatus', 'Active')->where('PCT.DFlag', 0)
+                ->where('PC.ActiveStatus', 'Active')
                 ->where('PC.DFlag', 0)->where('PSC.ActiveStatus', 'Active')->where('PSC.DFlag', 0)
                 ->when($req->PID, function ($query) use ($req) {
                     $PID = $req->PID;
@@ -615,7 +629,11 @@ class MasterController extends Controller
                     return $query->whereIn('P.SCID', $PSCIDs);
                 })
                 ->when($req->has('SearchText') && !empty($req->SearchText), function ($query) use ($req) {
-                    return $query->where('P.ProductName', 'like', '%' . $req->SearchText . '%');
+                    $search = $req->SearchText;
+                    return $query->where(function ($q) use ($search) {
+                        $q->where('P.ProductName', 'like', '%' . $search . '%')
+                            ->orWhere('P.ProductNameInTranslation', 'like', '%' . $search . '%');
+                    });
                 });
 
             $result = $products->select('P.ProductName', 'P.ProductNameInTranslation', 'P.ProductID', 'PCT.PCTName', 'PCT.PCTNameInTranslation',
@@ -740,6 +758,8 @@ class MasterController extends Controller
                 ->join('tbl_uom as U', 'U.UID', 'P.UID')
                 ->where('P.ActiveStatus', 'Active')
                 ->where('P.DFlag', 0)
+                ->where('PCT.ActiveStatus', 'Active')
+                ->where('PCT.DFlag', 0)
                 ->where('PC.ActiveStatus', 'Active')
                 ->where('PC.DFlag', 0)
                 ->where('PSC.ActiveStatus', 'Active')

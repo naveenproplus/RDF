@@ -1502,6 +1502,9 @@ class VendorAuthController extends Controller{
                 })
                 ->where('VPM.VendorID', $VendorID)
                 ->where('VPM.Status', 1)
+                ->where('P.ActiveStatus', 'Active')->where('P.DFlag', 0)
+                ->where('PC.ActiveStatus', 'Active')->where('PC.DFlag', 0)
+                ->where('PSC.ActiveStatus', 'Active')->where('PSC.DFlag', 0)
                 ->select('P.ProductID', 'P.ProductName', 'PC.PCName', 'PC.PCID', 'PSC.PSCID', 'PSC.PSCName', 'U.UName', 'U.UCode')
                 ->addSelect(DB::raw('IFNULL(SP.Qty, 0) AS Qty'))
                 ->get();

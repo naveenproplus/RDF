@@ -94,7 +94,9 @@ class WishlistController extends Controller
             $formattedWishlist = [];
             foreach ($wishlistProducts as $wishlistProduct) {
                 $productQuery = DB::table('tbl_products as P')->where('P.ProductID', $wishlistProduct->product_id)
-                    ->leftJoin('tbl_uom as U', 'U.UID', 'P.UID');
+                    ->leftJoin('tbl_uom as U', 'U.UID', 'P.UID')
+                    ->where('P.ActiveStatus', 'Active')
+                    ->where('P.DFlag', 0);
 
                 if (!empty($searchText)) {
                         $productQuery->where('ProductName', 'like', "%$searchText%");

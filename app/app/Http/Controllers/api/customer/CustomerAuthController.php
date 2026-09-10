@@ -144,7 +144,11 @@ class CustomerAuthController extends Controller{
             ->whereIn('P.CID', $PCIDs)->whereIn('P.SCID', $PSCIDs);
 
         if ($req->has('SearchText') && !empty($req->SearchText)) {
-            $products->where('P.ProductName', 'like', '%' . $req->SearchText . '%');
+            $search = $req->SearchText;
+            $products->where(function ($q) use ($search) {
+                $q->where('P.ProductName', 'like', '%' . $search . '%')
+                    ->orWhere('P.ProductNameInTranslation', 'like', '%' . $search . '%');
+            });
         }
 
         $products = $products->select('P.ProductName', 'P.ProductID', 'PC.PCName', 'PC.PCID', 'PSC.PSCName', 'PSC.PSCID', 'U.UName', 'U.UCode', 'U.UID', DB::raw('CONCAT("' . url('/') . '/", COALESCE(NULLIF(P.ProductImage, ""), "assets/images/no-image-b.png")) AS ProductImage'))

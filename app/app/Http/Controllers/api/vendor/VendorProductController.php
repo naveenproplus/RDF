@@ -187,6 +187,8 @@ class VendorProductController extends Controller
 				->join('tbl_product_subcategory as PSC', 'PSC.PSCID', 'P.SCID')
 				->join('tbl_uom as UOM', 'UOM.UID', 'P.UID')
 				->where('P.DFlag', 0)->where('P.ActiveStatus', 'Active')
+				->where('PC.ActiveStatus', 'Active')->where('PC.DFlag', 0)
+				->where('PSC.ActiveStatus', 'Active')->where('PSC.DFlag', 0)
 				->whereIn('P.CID', $req->PCID)->whereIn('P.SCID', $req->PSCID)->get();
 
 			$data = $data->map(function ($item) {

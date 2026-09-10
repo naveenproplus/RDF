@@ -357,6 +357,7 @@ class CustomerAPIController extends Controller{
         $lang = optional($req->auth_customer)->language ?? 'en';
         if ($req->SearchText) {
             $PCategories = DB::table('tbl_product_category as PC')
+                ->where('PC.ActiveStatus', 'Active')->where('PC.DFlag', 0)
                 ->where('PC.PCName', 'like', '%' . $req->SearchText . '%')
                 ->distinct()
                 ->select('PC.PCID', 'PC.PCName', 'PC.PCNameInTranslation')
@@ -369,6 +370,8 @@ class CustomerAPIController extends Controller{
 
             $PSCategories = DB::table('tbl_product_subcategory as PSC')
                 ->leftJoin('tbl_product_category as PC', 'PC.PCID', 'PSC.PCID')
+                ->where('PSC.ActiveStatus', 'Active')->where('PSC.DFlag', 0)
+                ->where('PC.ActiveStatus', 'Active')->where('PC.DFlag', 0)
                 ->where('PSC.PSCName', 'like', '%' . $req->SearchText . '%')
                 ->distinct()
                 ->select('PC.PCID', 'PC.PCName', 'PC.PCNameInTranslation', 'PSC.PSCID', 'PSC.PSCName', 'PSC.PSCNameInTranslation')->take(3)->get();
@@ -381,11 +384,22 @@ class CustomerAPIController extends Controller{
             });
 
             $Products = DB::table('tbl_products as P')
-                ->leftJoin('tbl_product_subcategory as PSC', 'P.SCID', 'PSC.PSCID')
-                ->leftJoin('tbl_product_category as PC', 'PC.PCID', 'PSC.PCID')
-                ->where('P.ProductName', 'like', '%' . $req->SearchText . '%')
+                ->join('tbl_product_category as PC', 'PC.PCID', '=', 'P.CID')
+                ->join('tbl_product_subcategory as PSC', 'PSC.PSCID', '=', 'P.SCID')
+                ->where('P.ActiveStatus', 'Active')
+                ->where('P.DFlag', 0)
+                ->where('PC.ActiveStatus', 'Active')
+                ->where('PC.DFlag', 0)
+                ->where('PSC.ActiveStatus', 'Active')
+                ->where('PSC.DFlag', 0)
+                ->where(function ($query) use ($req) {
+                    $search = $req->SearchText;
+                    $query->where('P.ProductName', 'like', '%' . $search . '%')
+                        ->orWhere('P.ProductNameInTranslation', 'like', '%' . $search . '%');
+                })
                 ->groupBy('P.ProductID', 'P.ProductName', 'P.ProductNameInTranslation', 'PC.PCID', 'PC.PCName', 'PC.PCNameInTranslation', 'PSC.PSCID', 'PSC.PSCName', 'PSC.PSCNameInTranslation')
-                ->select('P.ProductID', 'P.ProductName', 'P.ProductNameInTranslation', 'PC.PCID', 'PC.PCName', 'PC.PCNameInTranslation', 'PSC.PSCID', 'PSC.PSCName', 'PSC.PSCNameInTranslation')->take(3)->get();
+                ->select('P.ProductID', 'P.ProductName', 'P.ProductNameInTranslation', 'PC.PCID', 'PC.PCName', 'PC.PCNameInTranslation', 'PSC.PSCID', 'PSC.PSCName', 'PSC.PSCNameInTranslation')
+                ->take(3)->get();
             $Products->transform(function ($Product) use ($lang) {
                 $Product->PCName = json_decode($Product->PCNameInTranslation)->$lang ?? $Product->PCName;
                 $Product->PSCName = json_decode($Product->PSCNameInTranslation)->$lang ?? $Product->PSCName;
@@ -408,6 +422,7 @@ class CustomerAPIController extends Controller{
     {
         if ($req->SearchText) {
             $PCategories = DB::table('tbl_product_category as PC')
+                ->where('PC.ActiveStatus', 'Active')->where('PC.DFlag', 0)
                 ->where('PC.PCName', 'like', '%' . $req->SearchText . '%')
                 ->distinct()
                 ->select('PC.PCID', 'PC.PCName')
@@ -415,16 +430,29 @@ class CustomerAPIController extends Controller{
 
             $PSCategories = DB::table('tbl_product_subcategory as PSC')
                 ->leftJoin('tbl_product_category as PC', 'PC.PCID', 'PSC.PCID')
+                ->where('PSC.ActiveStatus', 'Active')->where('PSC.DFlag', 0)
+                ->where('PC.ActiveStatus', 'Active')->where('PC.DFlag', 0)
                 ->where('PSC.PSCName', 'like', '%' . $req->SearchText . '%')
                 ->distinct()
                 ->select('PC.PCID', 'PC.PCName', 'PSC.PSCID', 'PSC.PSCName')->take(3)->get();
 
             $Products = DB::table('tbl_products as P')
-                ->leftJoin('tbl_product_subcategory as PSC', 'P.SCID', 'PSC.PSCID')
-                ->leftJoin('tbl_product_category as PC', 'PC.PCID', 'PSC.PCID')
-                ->where('P.ProductName', 'like', '%' . $req->SearchText . '%')
+                ->join('tbl_product_category as PC', 'PC.PCID', '=', 'P.CID')
+                ->join('tbl_product_subcategory as PSC', 'PSC.PSCID', '=', 'P.SCID')
+                ->where('P.ActiveStatus', 'Active')
+                ->where('P.DFlag', 0)
+                ->where('PC.ActiveStatus', 'Active')
+                ->where('PC.DFlag', 0)
+                ->where('PSC.ActiveStatus', 'Active')
+                ->where('PSC.DFlag', 0)
+                ->where(function ($query) use ($req) {
+                    $search = $req->SearchText;
+                    $query->where('P.ProductName', 'like', '%' . $search . '%')
+                        ->orWhere('P.ProductNameInTranslation', 'like', '%' . $search . '%');
+                })
                 ->groupBy('P.ProductID', 'P.ProductName', 'PC.PCID', 'PC.PCName', 'PSC.PSCID', 'PSC.PSCName')
-                ->select('P.ProductID', 'P.ProductName', 'PC.PCID', 'PC.PCName', 'PSC.PSCID', 'PSC.PSCName')->take(3)->get();
+                ->select('P.ProductID', 'P.ProductName', 'PC.PCID', 'PC.PCName', 'PSC.PSCID', 'PSC.PSCName')
+                ->take(3)->get();
 
             $ProductData = ['PCategories' => $PCategories, 'PSCategories' => $PSCategories, 'Products' => $Products];
 
@@ -443,7 +471,9 @@ class CustomerAPIController extends Controller{
                 ->leftjoin('tbl_product_category as PC', 'PC.PCID', 'P.CID')
                 ->leftjoin('tbl_product_subcategory as PSC', 'PSC.PSCID', 'P.SCID')
                 ->leftjoin('tbl_uom as U', 'U.UID', 'P.UID')
-                ->where('P.ActiveStatus', 'Active')->where('P.DFlag', 0)->where('PC.ActiveStatus', 'Active')
+                ->where('P.ActiveStatus', 'Active')->where('P.DFlag', 0)
+                ->where('PCT.ActiveStatus', 'Active')->where('PCT.DFlag', 0)
+                ->where('PC.ActiveStatus', 'Active')
                 ->where('PC.DFlag', 0)->where('PSC.ActiveStatus', 'Active')->where('PSC.DFlag', 0)
                 ->select('P.ProductName', 'P.ProductID', 'PCT.PCTName', 'PCT.PCTID', 'PC.PCName', 'PC.PCID', 'PSC.PSCName', 'PSC.PSCID', 'U.UName', 'U.UCode', 'U.UID',
                     DB::raw('CONCAT("' . config('app.url') . '/", COALESCE(NULLIF(P.ProductImage, ""), "assets/images/no-image-b.png")) AS ProductImage'),
@@ -508,7 +538,9 @@ class CustomerAPIController extends Controller{
                     $join->on('W.product_id', '=', 'P.ProductID')
                         ->where('W.customer_id', '=', $CustomerID);
                 })
-                ->where('P.ActiveStatus', 'Active')->where('P.DFlag', 0)->where('PC.ActiveStatus', 'Active')
+                ->where('P.ActiveStatus', 'Active')->where('P.DFlag', 0)
+                ->where('PCT.ActiveStatus', 'Active')->where('PCT.DFlag', 0)
+                ->where('PC.ActiveStatus', 'Active')
                 ->where('PC.DFlag', 0)->where('PSC.ActiveStatus', 'Active')->where('PSC.DFlag', 0)
                 ->select('P.ProductName', 'P.ProductNameInTranslation', 'P.ProductID', 'PCT.PCTName', 'PCT.PCTNameInTranslation', 'PCT.PCTID', 'PC.PCName',
                     'PC.PCNameInTranslation', 'PC.PCID', 'PSC.PSCName', 'PSC.PSCNameInTranslation', 'PSC.PSCID', 'U.UName', 'U.UNameInTranslation',

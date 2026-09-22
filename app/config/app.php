@@ -61,6 +61,9 @@ return [
     'TEXT_LOCAL_API_KEY' => env('TEXT_LOCAL_API_KEY', ''),
     'TEXT_LOCAL_SENDER_NAME' => env('TEXT_LOCAL_SENDER_NAME', ''),
 
+// Order notification (admin inbox for new orders)
+    'ORDER_NOTIFICATION_EMAIL' => env('ORDER_NOTIFICATION_EMAIL', 'mail.royaldryfruits@gmail.com'),
+
 //  PhonePe Credentials
     'PHONEPE_MERCHANT_ID' => env('PHONEPE_MERCHANT_ID', 'PGTESTPAYUAT'),
     'PHONEPE_SALT_KEY' => env('PHONEPE_SALT_KEY', '099eb0cd-02cf-4e2a-8aca-3e6c6aff0399'),

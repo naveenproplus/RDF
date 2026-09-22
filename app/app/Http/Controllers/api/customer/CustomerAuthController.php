@@ -1699,6 +1699,14 @@ class CustomerAuthController extends Controller{
                     logger($e);
                 }
                 DB::commit();
+
+                // After commit — mail failure must never affect order placement
+                try {
+                    Helper::sendOrderNotificationEmail($OrderID);
+                } catch (\Throwable $e) {
+                    logger($e);
+                }
+
                 return $this->successResponse([], "Payment Status Successfully Updated");
             } else {
                 return $this->errorResponse([], "Payment status already updated!.", 500);
@@ -1892,6 +1900,21 @@ class CustomerAuthController extends Controller{
             ->where('PC.PID', $postalCodeID)
             ->first();
         return [$orderDetails, $logo, $companyDetails, $locationDetails];
+    }
+
+    /**
+     * @deprecated Use Helper::sendOrderNotificationEmail() — kept for compatibility.
+     * Notify admin inbox when a new paid order is confirmed.
+     * Never throws — mail failures must not affect order placement.
+     */
+    public function sendOrderNotificationEmail(string $OrderID): bool
+    {
+        try {
+            return Helper::sendOrderNotificationEmail($OrderID);
+        } catch (\Throwable $e) {
+            logger($e);
+            return false;
+        }
     }
 
     public function googleReviewDecision(Request $request)

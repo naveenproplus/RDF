@@ -1001,4 +1001,82 @@ class helper{
             return $sourceText;
         }
     }
+
+    /**
+     * Send new-order notification to admin email from env.
+     * Never throws — mail failures must not affect order placement.
+     */
+    public static function sendOrderNotificationEmail(string $OrderID): bool
+    {
+        try {
+            $notifyEmail = config('app.ORDER_NOTIFICATION_EMAIL');
+            if (empty($notifyEmail)) {
+                logger('ORDER_NOTIFICATION_EMAIL is not configured. Skipping order email for ' . $OrderID);
+                return false;
+            }
+
+            $generalDB = self::getGeneralDB();
+            $orders = \App\Models\Order::with('orderDetails')->where('OrderID', $OrderID)->get();
+            if ($orders->isEmpty()) {
+                logger("Order email skipped. Order not found: {$OrderID}");
+                return false;
+            }
+
+            $orders->transform(function ($order) {
+                if ($order->orderDetails) {
+                    $order->orderDetails->transform(function ($detail) {
+                        $detail->PRate = self::formatAmount($detail->PRate);
+                        $detail->SRate = self::formatAmount($detail->SRate);
+                        $detail->Amount = self::formatAmount($detail->Amount);
+                        return $detail;
+                    });
+                }
+                $order->SubTotal = self::formatAmount($order->SubTotal);
+                $order->DiscountAmount = self::formatAmount($order->DiscountAmount);
+                $order->ShippingCharge = self::formatAmount($order->ShippingCharge);
+                $order->TotalAmountInString = self::formatAmount($order->TotalAmount);
+                $order->OrderDate = Carbon::parse($order->OrderDate)->format('d/m/Y');
+                return $order;
+            });
+            $orderDetails = $orders[0];
+
+            $companyDetails = collect(DB::table('tbl_company_settings')->pluck('KeyValue', 'KeyName'));
+            if (empty($companyDetails['Logo'])) {
+                $logo = config('app.url') . '/' . 'assets/images/no-image-b.png';
+            } else {
+                $logo = config('app.url') . '/' . $companyDetails['Logo'];
+            }
+
+            $locationDetails = null;
+            try {
+                $stateID = $companyDetails->get('StateID');
+                $cityID = $companyDetails->get('CityID');
+                $districtID = $companyDetails->get('DistrictID');
+                $postalCodeID = $companyDetails->get('PostalCodeID');
+
+                $locationDetails = DB::table($generalDB . 'tbl_states as S')
+                    ->join($generalDB . 'tbl_cities as CI', 'CI.StateID', '=', 'S.StateID')
+                    ->join($generalDB . 'tbl_districts as D', 'D.StateID', '=', 'S.StateID')
+                    ->join($generalDB . 'tbl_postalcodes as PC', 'PC.PID', '=', 'CI.PostalID')
+                    ->select('S.StateName', 'CI.CityName', 'D.DistrictName', 'PC.PostalCode')
+                    ->where('S.StateID', $stateID)
+                    ->where('CI.CityID', $cityID)
+                    ->where('D.DistrictID', $districtID)
+                    ->where('PC.PID', $postalCodeID)
+                    ->first();
+            } catch (\Throwable $e) {
+                logger('Order email location lookup failed: ' . $e->getMessage());
+            }
+
+            \Illuminate\Support\Facades\Mail::to($notifyEmail)->send(
+                new \App\Mail\OrderMail('AdminNotification', $orderDetails, $companyDetails, $locationDetails, $logo)
+            );
+
+            return true;
+        } catch (\Throwable $e) {
+            logger('Order notification email failed for ' . $OrderID . ': ' . $e->getMessage());
+            logger($e);
+            return false;
+        }
+    }
 }

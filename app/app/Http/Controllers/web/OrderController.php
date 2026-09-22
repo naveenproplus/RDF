@@ -793,6 +793,22 @@ class OrderController extends Controller{
                     logger($e);
                 }
                 DB::commit();
+
+                // After commit — mail failure must never affect shipment update
+                try {
+                    if ($OldData->Email) {
+                        [$orderDetails, $logo, $companyDetails, $locationDetails] = $this->generateMailData($OrderID);
+                        if ($orderDetails) {
+                            Mail::to($OldData->Email)->send(
+                                new OrderMail("Shipment", $orderDetails, $companyDetails, $locationDetails, $logo)
+                            );
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    logger('Shipment email failed for ' . $OrderID . ': ' . $e->getMessage());
+                    logger($e);
+                }
+
                 return array('status' => true, 'message' => "Track Status Updated Successfully");
             } catch (\Throwable $e) {
                 logger($e);
@@ -854,6 +870,20 @@ class OrderController extends Controller{
             ->where('PC.PID', $postalCodeID)
             ->first();
         return [$orderDetails, $logo, $companyDetails, $locationDetails];
+    }
+
+    /**
+     * Notify admin inbox when a new order is received.
+     * Never throws — mail failures must not affect order/web flow.
+     */
+    public function sendOrderNotificationEmail(string $OrderID): bool
+    {
+        try {
+            return Helper::sendOrderNotificationEmail($OrderID);
+        } catch (\Throwable $e) {
+            logger($e);
+            return false;
+        }
     }
 
     public function generatePackingLabel($OrderID)

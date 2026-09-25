@@ -1700,9 +1700,14 @@ class CustomerAuthController extends Controller{
                 }
                 DB::commit();
 
-                // After commit — mail failure must never affect order placement
+                // After commit — mail/SMS failure must never affect order placement
                 try {
                     Helper::sendOrderNotificationEmail($OrderID);
+                } catch (\Throwable $e) {
+                    logger($e);
+                }
+                try {
+                    Helper::sendOrderNotificationSms($OrderID);
                 } catch (\Throwable $e) {
                     logger($e);
                 }

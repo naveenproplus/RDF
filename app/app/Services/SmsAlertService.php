@@ -20,6 +20,15 @@ class SmsAlertService
 
     public function sendOTP(string $mobileNumber, string $message): array
     {
+        return $this->send($mobileNumber, $message);
+    }
+
+    /**
+     * Send SMS via SMS Alert push API.
+     * Optional DLT template id is sent when configured.
+     */
+    public function send(string $mobileNumber, string $message, ?string $templateId = null): array
+    {
         if ($this->apiKey === '' || $this->sender === '') {
             return [
                 'status' => false,
@@ -44,6 +53,11 @@ class SmsAlertService
             $params['route'] = $this->route;
         }
 
+        $templateId = $templateId ?: config('app.ORDER_SMS_TEMPLATE_ID');
+        if (!empty($templateId)) {
+            $params['template'] = $templateId;
+        }
+
         try {
             $response = Http::timeout(30)->get('https://www.smsalert.co.in/api/push.json', $params);
             $responseData = $response->json();
@@ -52,7 +66,7 @@ class SmsAlertService
                 Log::warning('SMS Alert invalid response', ['body' => $response->body()]);
                 return [
                     'status' => false,
-                    'message' => 'OTP Send Failed',
+                    'message' => 'SMS Send Failed',
                     'errors' => ['response' => $response->body()],
                 ];
             }
@@ -61,14 +75,14 @@ class SmsAlertService
             if (in_array($status, ['success', 'ok'], true)) {
                 return [
                     'status' => true,
-                    'message' => 'OTP Sent Successfully',
+                    'message' => 'SMS Sent Successfully',
                     'response' => $responseData,
                 ];
             }
 
             return [
                 'status' => false,
-                'message' => $responseData['description'] ?? $responseData['message'] ?? 'OTP Send Failed',
+                'message' => $responseData['description'] ?? $responseData['message'] ?? 'SMS Send Failed',
                 'errors' => $responseData,
             ];
         } catch (\Throwable $e) {

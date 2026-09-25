@@ -52,7 +52,7 @@ return [
 
 // SMS Alert (falls back to legacy SMS_* env keys if present)
     'SMS_ALERT_API_KEY' => env('SMS_ALERT_API_KEY', env('SMS_API_KEY', '')),
-    'SMS_ALERT_SENDER_ID' => env('SMS_ALERT_SENDER_ID', env('SMS_SENDER_NAME', '')),
+    'SMS_ALERT_SENDER_ID' => env('SMS_ALERT_SENDER_ID', env('SMS_SENDER_NAME', 'RDFCBE')),
     'SMS_ALERT_USERNAME' => env('SMS_ALERT_USERNAME', ''),
     'SMS_ALERT_ROUTE' => env('SMS_ALERT_ROUTE', ''),
     'OTP_SMS_STRICT' => env('OTP_SMS_STRICT', false),
@@ -61,8 +61,10 @@ return [
     'TEXT_LOCAL_API_KEY' => env('TEXT_LOCAL_API_KEY', ''),
     'TEXT_LOCAL_SENDER_NAME' => env('TEXT_LOCAL_SENDER_NAME', ''),
 
-// Order notification (admin inbox for new orders)
+// Order notification (admin inbox / SMS for new orders)
     'ORDER_NOTIFICATION_EMAIL' => env('ORDER_NOTIFICATION_EMAIL', 'mail.royaldryfruits@gmail.com'),
+    'ORDER_NOTIFICATION_MOBILE' => env('ORDER_NOTIFICATION_MOBILE', ''),
+    'ORDER_SMS_TEMPLATE_ID' => env('ORDER_SMS_TEMPLATE_ID', '1477179032969859087'),
 
 //  PhonePe Credentials
     'PHONEPE_MERCHANT_ID' => env('PHONEPE_MERCHANT_ID', 'PGTESTPAYUAT'),

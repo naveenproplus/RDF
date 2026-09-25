@@ -1079,4 +1079,56 @@ class helper{
             return false;
         }
     }
+
+    /**
+     * DLT template SMS to admin mobile on new order.
+     * Template: New order received from {#var#}. Order ID: {#var#}. View order: {#url#} - Royal dry fruits
+     * Never throws — SMS failures must not affect order placement.
+     */
+    public static function sendOrderNotificationSms(string $OrderID): bool
+    {
+        try {
+            $mobile = config('app.ORDER_NOTIFICATION_MOBILE');
+            if (empty($mobile)) {
+                logger('ORDER_NOTIFICATION_MOBILE is not configured. Skipping order SMS for ' . $OrderID);
+                return false;
+            }
+
+            $order = \App\Models\Order::where('OrderID', $OrderID)->first();
+            if (!$order) {
+                logger("Order SMS skipped. Order not found: {$OrderID}");
+                return false;
+            }
+
+            $customerName = trim((string) ($order->CustomerName ?? 'Customer'));
+            if ($customerName === '') {
+                $customerName = 'Customer';
+            }
+            // DLT alphanumeric vars: keep printable; avoid breaking template match
+            $customerName = preg_replace('/\s+/', ' ', $customerName);
+
+            $orderUrl = url('/admin/orders/edit/' . urlencode($OrderID));
+
+            // Must match approved DLT template text exactly (variable slots only)
+            $message = "New order received from {$customerName}. Order ID: {$OrderID}. View order: {$orderUrl} - Royal dry fruits";
+
+            $result = (new \App\Services\SmsAlertService())->send(
+                $mobile,
+                $message,
+                config('app.ORDER_SMS_TEMPLATE_ID')
+            );
+
+            if (!($result['status'] ?? false)) {
+                logger('Order notification SMS failed for ' . $OrderID . ': ' . ($result['message'] ?? 'unknown'));
+                logger($result);
+                return false;
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            logger('Order notification SMS failed for ' . $OrderID . ': ' . $e->getMessage());
+            logger($e);
+            return false;
+        }
+    }
 }

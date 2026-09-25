@@ -9,7 +9,7 @@ class CustomerCart extends Model
 {
     use HasFactory;
 
-    protected $connection = "rdf_main";
+
     protected $table = "tbl_customer_cart";
     protected $primaryKey = 'CartID';
     public $timestamps = false;

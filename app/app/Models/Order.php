@@ -11,7 +11,7 @@ class Order extends Model
 {
     use HasFactory;
 
-    protected $connection = "rdf_main";
+
     protected $table = "tbl_order";
     protected $primaryKey = 'OrderID';
     public $incrementing = false;

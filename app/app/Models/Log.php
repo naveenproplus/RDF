@@ -9,7 +9,7 @@ class Log extends Model
 {
     use HasFactory;
 
-    protected $connection = "rdf_log";
+
 
     public function __construct(array $attributes = [])
     {

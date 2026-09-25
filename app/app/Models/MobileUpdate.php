@@ -10,7 +10,7 @@ class MobileUpdate extends Model
 {
     use HasFactory;
 
-    protected $connection = "rdf_main";
+
     protected $table = "tbl_mobile_version";
     protected $primaryKey = 'id';
     public $incrementing = false;

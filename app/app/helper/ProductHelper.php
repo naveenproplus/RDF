@@ -21,8 +21,8 @@ class ProductHelper {
         self::checkTmpProductTables();
         if($req->saveType=="main"){
             $tmpDBName=Helper::getTmpDB();
-            DB::statement("Delete From ".$tmpDBName."tbl_products Where Date(CreatedOn)<'".date("Y-m-d")."'");
-            DB::statement("Delete From ".$tmpDBName."tbl_products_variation Where Date(CreatedOn)<'".date("Y-m-d")."'");
+            DB::statement("Delete From ".$tmpDBName."tmp_products Where Date(CreatedOn)<'".date("Y-m-d")."'");
+            DB::statement("Delete From ".$tmpDBName."tmp_products_variation Where Date(CreatedOn)<'".date("Y-m-d")."'");
             return self::variationProductSave($req,$UserID);
         }elseif($req->saveType=="Variable"){
             return self::variationSave($req,$UserID);
@@ -88,7 +88,7 @@ class ProductHelper {
         $isDeleteProductImage=false;
         $isDeleteProductBrochure=false;
         try {
-            $result=DB::Table($tmpDBName."tbl_products")->where('ProductID',$tmpProductID)->get();
+            $result=DB::Table($tmpDBName."tmp_products")->where('ProductID',$tmpProductID)->get();
             if(count($result)){
                 //Checking Product ID Exists or not for save or update
                 $isNewProductID=true;
@@ -351,7 +351,7 @@ class ProductHelper {
                     }
                 }
                 //variation details save
-                $Variations=DB::Table($tmpDBName."tbl_products_variation")->where('ProductID',$tmpProductID)->get();
+                $Variations=DB::Table($tmpDBName."tmp_products_variation")->where('ProductID',$tmpProductID)->get();
                 $tmpVariationIDs=array();
                 foreach($Variations as $index =>$Variation){
                     if($status){
@@ -586,8 +586,8 @@ class ProductHelper {
     private static function variationProductSave($req, $UserID)
     {
         $tmpDBName = Helper::getTmpDB();
-        DB::Table($tmpDBName . 'tbl_products')->where('ProductID', $req->ProductID)->delete();
-        DB::Table($tmpDBName . 'tbl_products_variation')->where('ProductID', $req->ProductID)->delete();
+        DB::Table($tmpDBName . 'tmp_products')->where('ProductID', $req->ProductID)->delete();
+        DB::Table($tmpDBName . 'tmp_products_variation')->where('ProductID', $req->ProductID)->delete();
         $ValidDB = array();
         //Category Type
         $ValidDB['CategoryType']['TABLE'] = "tbl_product_category_type";
@@ -720,7 +720,7 @@ class ProductHelper {
                 }
                 $data['ProductNameInTranslation'] = json_encode($existingTranslations);
             }
-            DB::Table($tmpDBName . 'tbl_products')->insert($data);
+            DB::Table($tmpDBName . 'tmp_products')->insert($data);
             DB::commit();
             return array('status' => true, "ProductID" => $ProductID);
         } catch (Exception $e) {
@@ -762,7 +762,7 @@ class ProductHelper {
                 "CreatedBy" => $UserID,
                 "CreatedOn" => date("Y-m-d H:i:s")
             ];
-            DB::Table($tmpDBName . 'tbl_products_variation')->insert($data);
+            DB::Table($tmpDBName . 'tmp_products_variation')->insert($data);
             DB::commit();
             return array('status' => true, 'message' => "variation Saved Successfully");
         } catch (Exception $e) {
@@ -777,12 +777,12 @@ class ProductHelper {
     }
 	private static function checkTmpProductTables(){
 		$tmpDBName=Helper::getTmpDB();
-		if(!Helper::checkTableExists($tmpDBName, "tbl_products")){
-			$sql="CREATE TABLE ".$tmpDBName."tbl_products (ProductID varchar(50) Primary Key,Slug varchar(160) DEFAULT NULL,ProductName varchar(150) DEFAULT NULL,ProductType enum('Simple','Variable') DEFAULT 'Simple',SKU varchar(50) DEFAULT NULL, HSNSAC varchar(50) DEFAULT NULL,ProductCode varchar(50) DEFAULT NULL,VideoURL text DEFAULT NULL,CID varchar(50) DEFAULT NULL,SCID varchar(50) DEFAULT NULL,UID varchar(50) DEFAULT NULL,TaxType enum('Exclude','Include') DEFAULT 'Exclude',TaxID varchar(50) DEFAULT NULL,PRate double DEFAULT 0,SRate double DEFAULT 0,Decimals enum('auto','0','1','2','3','4','5','6','7','8','9') DEFAULT 'auto',Description text DEFAULT NULL,ShortDescription text DEFAULT NULL,Attributes text,Images text DEFAULT NULL,gallery text DEFAULT NULL,ActiveStatus enum('Active','Inactive') DEFAULT 'Active',DFlag int(1) DEFAULT 0,CreatedOn timestamp NULL DEFAULT current_timestamp(),CreatedBy varchar(50) DEFAULT NULL,UpdatedOn timestamp NULL DEFAULT NULL,UpdatedBy varchar(50) DEFAULT NULL,DeletedOn timestamp NULL DEFAULT NULL,DeletedBy varchar(50) DEFAULT NULL)";
+		if(!Helper::checkTableExists($tmpDBName, "tmp_products")){
+			$sql="CREATE TABLE ".$tmpDBName."tmp_products (ProductID varchar(50) Primary Key,Slug varchar(160) DEFAULT NULL,ProductName varchar(150) DEFAULT NULL,ProductType enum('Simple','Variable') DEFAULT 'Simple',SKU varchar(50) DEFAULT NULL, HSNSAC varchar(50) DEFAULT NULL,ProductCode varchar(50) DEFAULT NULL,VideoURL text DEFAULT NULL,CID varchar(50) DEFAULT NULL,SCID varchar(50) DEFAULT NULL,UID varchar(50) DEFAULT NULL,TaxType enum('Exclude','Include') DEFAULT 'Exclude',TaxID varchar(50) DEFAULT NULL,PRate double DEFAULT 0,SRate double DEFAULT 0,Decimals enum('auto','0','1','2','3','4','5','6','7','8','9') DEFAULT 'auto',Description text DEFAULT NULL,ShortDescription text DEFAULT NULL,Attributes text,Images text DEFAULT NULL,gallery text DEFAULT NULL,ActiveStatus enum('Active','Inactive') DEFAULT 'Active',DFlag int(1) DEFAULT 0,CreatedOn timestamp NULL DEFAULT current_timestamp(),CreatedBy varchar(50) DEFAULT NULL,UpdatedOn timestamp NULL DEFAULT NULL,UpdatedBy varchar(50) DEFAULT NULL,DeletedOn timestamp NULL DEFAULT NULL,DeletedBy varchar(50) DEFAULT NULL)";
 			DB::Statement($sql);
 		}
-		if(!Helper::checkTableExists($tmpDBName, "tbl_products_variation")){
-            $sql=" CREATE TABLE ".$tmpDBName."tbl_products_variation (VariationID varchar(50) Primary Key,UUID varchar(100) DEFAULT NULL,ProductID varchar(50) DEFAULT NULL,Slug text DEFAULT NULL,Title varchar(150) DEFAULT NULL,PRate double DEFAULT 0,SRate double DEFAULT 0,Images text DEFAULT NULL,Attributes text DEFAULT NULL,CombinationID text DEFAULT NULL,DFlag int(1) DEFAULT 0,CreatedOn timestamp NULL DEFAULT current_timestamp(),CreatedBy varchar(50) DEFAULT NULL,UpdatedOn timestamp NULL DEFAULT NULL,UpdatedBy varchar(50) DEFAULT NULL,DeletedOn timestamp NULL DEFAULT NULL,DeletedBy varchar(50) DEFAULT NULL)";
+		if(!Helper::checkTableExists($tmpDBName, "tmp_products_variation")){
+            $sql=" CREATE TABLE ".$tmpDBName."tmp_products_variation (VariationID varchar(50) Primary Key,UUID varchar(100) DEFAULT NULL,ProductID varchar(50) DEFAULT NULL,Slug text DEFAULT NULL,Title varchar(150) DEFAULT NULL,PRate double DEFAULT 0,SRate double DEFAULT 0,Images text DEFAULT NULL,Attributes text DEFAULT NULL,CombinationID text DEFAULT NULL,DFlag int(1) DEFAULT 0,CreatedOn timestamp NULL DEFAULT current_timestamp(),CreatedBy varchar(50) DEFAULT NULL,UpdatedOn timestamp NULL DEFAULT NULL,UpdatedBy varchar(50) DEFAULT NULL,DeletedOn timestamp NULL DEFAULT NULL,DeletedBy varchar(50) DEFAULT NULL)";
 			DB::Statement($sql);
 		}
 		if(!Helper::checkTableExists($tmpDBName, "tbl_product_save_status")){

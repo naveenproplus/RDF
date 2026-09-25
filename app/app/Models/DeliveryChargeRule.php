@@ -11,7 +11,7 @@ class DeliveryChargeRule extends Model
     use HasFactory;
     use softDeletes;
 
-    protected $connection = "rdf_main";
+
     protected $table = "tbl_delivery_charge_rules";
 
     protected $fillable = [

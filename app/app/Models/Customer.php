@@ -10,7 +10,7 @@ class Customer extends Model
 {
     use HasFactory;
 
-    protected $connection = "rdf_main";
+
     protected $table = "tbl_customer";
     protected $primaryKey = 'CustomerID';
     public $incrementing = false;

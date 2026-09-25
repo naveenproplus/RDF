@@ -9,7 +9,7 @@ class CustomerOrderTrack extends Model
 {
     use HasFactory;
 
-    protected $connection = "rdf_main";
+
     protected $table = "tbl_customer_order_track";
     protected $primaryKey = 'TrackID';
     public $timestamps = false;

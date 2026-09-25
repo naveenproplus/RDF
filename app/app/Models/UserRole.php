@@ -9,7 +9,7 @@ class UserRole extends Model
 {
     use HasFactory;
 
-    protected $connection = "rdf_main";
+
 
     protected $table = "tbl_user_roles";
 }

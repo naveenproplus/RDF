@@ -9,7 +9,7 @@ class ProductCategoryType extends Model
 {
     use HasFactory;
 
-    protected $connection = "rdf_main";
+
     protected $table = "tbl_product_category_type";
 
     protected $fillable = [

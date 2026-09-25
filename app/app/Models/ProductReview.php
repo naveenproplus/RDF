@@ -11,7 +11,7 @@ class ProductReview extends Model
 {
     use HasFactory;
 
-    protected $connection = "rdf_main";
+
     protected $table = "tbl_product_reviews";
     protected $primaryKey = 'TrackID';
     public $timestamps = false;

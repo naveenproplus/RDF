@@ -9,7 +9,7 @@ class ReviewLike extends Model
 {
     use HasFactory;
 
-    protected $connection = "rdf_main";
+
     protected $table = "tbl_review_likes";
     protected $primaryKey = 'ReviewLikeID';
     public $timestamps = false;

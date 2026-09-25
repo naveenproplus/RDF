@@ -9,7 +9,7 @@ class Gender extends Model
 {
     use HasFactory;
 
-    protected $connection = 'rdf_general';
+
 
     protected $table = "tbl_genders";
 }

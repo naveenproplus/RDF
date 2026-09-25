@@ -17,25 +17,26 @@ class helper{
         return '₹ ' . $amount;
     }
 	public static function getMainDB(){
-		return config('app.db_main').".";
+		// Single-DB mode (rdf_overall): no schema prefix on table names
+		return '';
 	}
 	public static function getGeneralDB(){
-		return config('app.db_general').".";
+		return '';
 	}
 	public static function getLogDB(){
-		return config('app.db_log').".";
+		return '';
 	}
 	public static function getStockDB(){
-		return "rdf_stock_fy_2324.";
+		return '';
 	}
 	public static function getTmpDB(){
-		return config('app.db_tmp').".";
+		return '';
 	}
 	public static function getSupportDB(){
-		return config('app.db_support').".";
+		return '';
 	}
 	public static function getDBPrefix(){
-		return config('app.db_prefix');
+		return config('app.db_prefix', '');
 	}
 	public static function getVendorDB($VendorID,$UserID){
 		$VendorDB = DB::table('tbl_vendors_database')->where('VendorID', $VendorID)->value('DBName');
@@ -44,7 +45,8 @@ class helper{
 				$VendorDB = DB::table('tbl_vendors_database')->where('VendorID', $VendorID)->value('DBName');
 			}
 		}
-		return $VendorDB.'.';
+		// Single-DB mode: vendor tables live in the same schema (no dbname. prefix)
+		return '';
 	}
 	public static function getStockTable($VendorID) {
 		$StockDB = self::getStockDB();
@@ -101,27 +103,23 @@ class helper{
 		$VendorUniqueID=self::generateUniqueVendorID($VendorID);
 		$t=DB::table('tbl_vendors')->where('VendorID',$VendorID)->exists();
 		if($t){
-			$VendorDBName = $DBPrefix.'v_'.$VendorUniqueID.'_'.$FYName;
-			$sql = "CREATE DATABASE IF NOT EXISTS $VendorDBName";
-			$status = DB::statement($sql);
-			$status = true;
-			if($status){
-				$isVendorIDExists=DB::table('tbl_vendors_database')->where('VendorID', $VendorID)->exists();
-				if(!$isVendorIDExists){
-					$data = [
-						'VendorID' => $VendorID,
-						'DBName' => $VendorDBName,
-						'VendorUniqueID' => $VendorUniqueID,
-						'CreatedBy' => $UserID,
-						'CreatedOn' => now(),
-					];
-					$status = DB::table('tbl_vendors_database')->insert($data);
-					if($status){
-						return $status;
-					}
-				}else{
-					return ['status' =>false,'message' =>'Vendor Name Exists!'];
+			// Logical vendor key only — tables are created in the current database (rdf_overall)
+			$VendorDBName = ($DBPrefix ?: '').'v_'.$VendorUniqueID.'_'.$FYName;
+			$isVendorIDExists=DB::table('tbl_vendors_database')->where('VendorID', $VendorID)->exists();
+			if(!$isVendorIDExists){
+				$data = [
+					'VendorID' => $VendorID,
+					'DBName' => $VendorDBName,
+					'VendorUniqueID' => $VendorUniqueID,
+					'CreatedBy' => $UserID,
+					'CreatedOn' => now(),
+				];
+				$status = DB::table('tbl_vendors_database')->insert($data);
+				if($status){
+					return $status;
 				}
+			}else{
+				return ['status' =>false,'message' =>'Vendor Name Exists!'];
 			}
 		}
 	}
@@ -349,8 +347,10 @@ class helper{
 		}
 	}
 	public static function checkTableExists($DBName,$TableName){
-		$DBName=$DBName==""?self::getMainDB():$DBName;
-		$DBName=str_replace(".","",$DBName);
+		$DBName=str_replace(".","",(string)$DBName);
+		if($DBName===""){
+			$DBName = (string) config('database.connections.'.config('database.default').'.database');
+		}
         $sql="SELECT * FROM information_schema.tables WHERE table_schema = '".$DBName."' AND table_name = '".$TableName."' LIMIT 1;";
         $result=DB::SELECT($sql);
         if(count($result)>0){

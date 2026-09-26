@@ -737,10 +737,41 @@ class helper{
 		return $image;
 	}
 
-    public static function apiCheckImageExistsUrl($url)
-    {
-        return rtrim((string) config('app.url'), '/') . "/" . (self::productImageFileExists($url) ? ltrim((string) $url, '/') : "assets/images/no-images.jpg");
-    }
+	/**
+	 * Absolute image URL for API responses.
+	 * Prefer the live request host (so a stale APP_URL like prodemo.in does not break mobile).
+	 */
+	public static function apiImageBaseUrl(): string
+	{
+		try {
+			if (!app()->runningInConsole()) {
+				$req = request();
+				if ($req) {
+					$base = $req->getSchemeAndHttpHost() . $req->getBaseUrl();
+					// getBaseUrl() already includes script path; strip trailing /index.php
+					$base = preg_replace('#/index\.php$#i', '', $base);
+					return rtrim((string) $base, '/');
+				}
+			}
+		} catch (\Throwable $e) {
+			// fall through to config
+		}
+		return rtrim((string) config('app.url'), '/');
+	}
+
+	public static function apiCheckImageExistsUrl($url)
+	{
+		$path = trim(str_replace('\\', '/', (string) $url));
+		// Already absolute — keep only the path under the host
+		if (preg_match('#^https?://[^/]+/(.+)$#i', $path, $m)) {
+			$path = $m[1];
+		}
+		$path = ltrim($path, '/');
+		if ($path === '' || !self::productImageFileExists($path)) {
+			$path = 'assets/images/no-images.jpg';
+		}
+		return self::apiImageBaseUrl() . '/' . $path;
+	}
 
 	public static function getVehicleType($data=array()){
 		$generalDB=self::getGeneralDB();
@@ -1082,7 +1113,7 @@ class helper{
 
     /**
      * DLT template SMS to admin mobile on new order.
-     * Template: New order received from {#var#}. Order ID: {#var#}. View order: {#url#} - Royal dry fruits
+     * Approved: New order received from {#alp#}. Order ID: {#num#}. View order: {#uro#}. Royal Dry Fruits
      * Never throws — SMS failures must not affect order placement.
      */
     public static function sendOrderNotificationSms(string $OrderID): bool
@@ -1100,17 +1131,28 @@ class helper{
                 return false;
             }
 
+            // {#alp#} — letters/spaces only
             $customerName = trim((string) ($order->CustomerName ?? 'Customer'));
+            $customerName = preg_replace('/[^A-Za-z\s]/', '', $customerName);
+            $customerName = trim(preg_replace('/\s+/', ' ', (string) $customerName));
             if ($customerName === '') {
                 $customerName = 'Customer';
             }
-            // DLT alphanumeric vars: keep printable; avoid breaking template match
-            $customerName = preg_replace('/\s+/', ' ', $customerName);
 
-            $orderUrl = url('/admin/orders/edit/' . urlencode($OrderID));
+            // {#num#} — digits only (e.g. O2026-00000020 → 202600000020)
+            $orderNum = preg_replace('/\D/', '', $OrderID);
+            if ($orderNum === '') {
+                $orderNum = '0';
+            }
 
-            // Must match approved DLT template text exactly (variable slots only)
-            $message = "New order received from {$customerName}. Order ID: {$OrderID}. View order: {$orderUrl} - Royal dry fruits";
+            // {#uro#} — use fixed DLT sample CTA URL (long paths / load.bz fail CTA whitelist)
+            $orderUrl = rtrim((string) config('app.ORDER_SMS_VIEW_URL', 'https://app.royaldryfruits.biz'), '/');
+            if ($orderUrl === '') {
+                $orderUrl = 'https://app.royaldryfruits.biz';
+            }
+
+            // Must match approved DLT template static text exactly
+            $message = "New order received from {$customerName}. Order ID: {$orderNum}. View order: {$orderUrl}. Royal Dry Fruits";
 
             $result = (new \App\Services\SmsAlertService())->send(
                 $mobile,
@@ -1130,5 +1172,50 @@ class helper{
             logger($e);
             return false;
         }
+    }
+
+    /**
+     * Admin email + SMS for a new order. Safe to call more than once —
+     * only the first successful attempt per OrderID runs (7-day cache).
+     * Never throws.
+     *
+     * @return array{email:bool,sms:bool,skipped:bool}
+     */
+    public static function notifyNewOrder(string $OrderID, bool $force = false): array
+    {
+        $result = ['email' => false, 'sms' => false, 'skipped' => false];
+        $OrderID = trim($OrderID);
+        if ($OrderID === '') {
+            return $result;
+        }
+
+        $cacheKey = 'order_admin_notify_' . $OrderID;
+        if (!$force) {
+            try {
+                if (!\Illuminate\Support\Facades\Cache::add($cacheKey, 1, now()->addDays(7))) {
+                    $result['skipped'] = true;
+                    return $result;
+                }
+            } catch (\Throwable $e) {
+                // Cache unavailable — still send (better duplicate than silent miss)
+                logger('notifyNewOrder cache check failed: ' . $e->getMessage());
+            }
+        }
+
+        try {
+            $result['email'] = self::sendOrderNotificationEmail($OrderID);
+        } catch (\Throwable $e) {
+            logger('notifyNewOrder email failed for ' . $OrderID . ': ' . $e->getMessage());
+            logger($e);
+        }
+
+        try {
+            $result['sms'] = self::sendOrderNotificationSms($OrderID);
+        } catch (\Throwable $e) {
+            logger('notifyNewOrder sms failed for ' . $OrderID . ': ' . $e->getMessage());
+            logger($e);
+        }
+
+        return $result;
     }
 }

@@ -154,7 +154,15 @@
     </div>
     <div class="info-section">
         <h4>Payment Info</h4>
-        <p>PhonePe Payment ID: {{ str_repeat('*', strlen($orderDetails->PaymentID) - 4) . substr($orderDetails->PaymentID, - 4) }}</p>
+        <p>PhonePe Payment ID:
+            @php
+                $paymentId = (string) ($orderDetails->PaymentID ?? '');
+                $maskedPaymentId = strlen($paymentId) > 4
+                    ? str_repeat('*', strlen($paymentId) - 4) . substr($paymentId, -4)
+                    : ($paymentId !== '' ? $paymentId : '-');
+            @endphp
+            {{ $maskedPaymentId }}
+        </p>
     </div>
 
 {{--    <div class="info-section">--}}

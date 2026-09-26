@@ -24,11 +24,49 @@ class SmsAlertService
     }
 
     /**
+     * Shorten a long URL via SMS Alert (needed for DLT {#uro#} — long paths fail template match).
+     */
+    public function createShortUrl(string $longUrl): ?string
+    {
+        if ($this->apiKey === '' || $longUrl === '') {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(20)->get('https://www.smsalert.co.in/api/createshorturl.json', [
+                'apikey' => $this->apiKey,
+                'url' => $longUrl,
+            ]);
+            $data = $response->json();
+            if (!is_array($data) || strtolower((string) ($data['status'] ?? '')) !== 'success') {
+                Log::warning('SMS Alert short URL failed', ['body' => $response->body()]);
+                return null;
+            }
+
+            $short = data_get($data, 'description.data.Link.short_url')
+                ?: data_get($data, 'description.short_url')
+                ?: data_get($data, 'short_url');
+
+            if (!is_string($short) || $short === '') {
+                return null;
+            }
+
+            // Prefer https for uro matching
+            return preg_replace('#^http://#i', 'https://', $short);
+        } catch (\Throwable $e) {
+            Log::warning('SMS Alert short URL exception', ['message' => $e->getMessage()]);
+            return null;
+        }
+    }
+
+    /**
      * Send SMS via SMS Alert push API.
-     * Optional DLT template id is sent when configured.
+     * $templateId is accepted for call-site compatibility but not sent —
+     * SMS Alert matches message text to templates registered in their dashboard.
      */
     public function send(string $mobileNumber, string $message, ?string $templateId = null): array
     {
+        // $templateId unused — see note below about SMS Alert template matching.
         if ($this->apiKey === '' || $this->sender === '') {
             return [
                 'status' => false,
@@ -53,10 +91,9 @@ class SmsAlertService
             $params['route'] = $this->route;
         }
 
-        $templateId = $templateId ?: config('app.ORDER_SMS_TEMPLATE_ID');
-        if (!empty($templateId)) {
-            $params['template'] = $templateId;
-        }
+        // Note: SMS Alert push.json matches content against templates in the
+        // SMS Alert dashboard. TRAI DLT IDs (ORDER_SMS_TEMPLATE_ID) are not
+        // sent as API params — the order template must be added in the portal.
 
         try {
             $response = Http::timeout(30)->get('https://www.smsalert.co.in/api/push.json', $params);

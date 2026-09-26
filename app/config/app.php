@@ -50,9 +50,9 @@ return [
     'FIREBASE_APP_ID' => env('FIREBASE_APP_ID', ''),
     'FIREBASE_MEASUREMENT_ID' => env('FIREBASE_MEASUREMENT_ID', ''),
 
-// SMS Alert (falls back to legacy SMS_* env keys if present)
-    'SMS_ALERT_API_KEY' => env('SMS_ALERT_API_KEY', env('SMS_API_KEY', '')),
-    'SMS_ALERT_SENDER_ID' => env('SMS_ALERT_SENDER_ID', env('SMS_SENDER_NAME', 'RDFCBE')),
+// SMS Alert (falls back to legacy SMS_* env keys if new keys are empty)
+    'SMS_ALERT_API_KEY' => env('SMS_ALERT_API_KEY') ?: env('SMS_API_KEY', ''),
+    'SMS_ALERT_SENDER_ID' => env('SMS_ALERT_SENDER_ID') ?: env('SMS_SENDER_NAME', 'RDFCBE'),
     'SMS_ALERT_USERNAME' => env('SMS_ALERT_USERNAME', ''),
     'SMS_ALERT_ROUTE' => env('SMS_ALERT_ROUTE', ''),
     'OTP_SMS_STRICT' => env('OTP_SMS_STRICT', false),
@@ -65,6 +65,10 @@ return [
     'ORDER_NOTIFICATION_EMAIL' => env('ORDER_NOTIFICATION_EMAIL', 'mail.royaldryfruits@gmail.com'),
     'ORDER_NOTIFICATION_MOBILE' => env('ORDER_NOTIFICATION_MOBILE', ''),
     'ORDER_SMS_TEMPLATE_ID' => env('ORDER_SMS_TEMPLATE_ID', '1477179032969859087'),
+    // Fixed DLT-whitelisted CTA URL ({#uro#}).
+    // SMS Alert rejects path URLs for {#uro#}; use domain root only.
+    // Whitelist https://app.royaldryfruits.biz on BSNL CTA (path CTAs alone will not send).
+    'ORDER_SMS_VIEW_URL' => env('ORDER_SMS_VIEW_URL', 'https://app.royaldryfruits.biz'),
 
 //  PhonePe Credentials
     'PHONEPE_MERCHANT_ID' => env('PHONEPE_MERCHANT_ID', 'PGTESTPAYUAT'),

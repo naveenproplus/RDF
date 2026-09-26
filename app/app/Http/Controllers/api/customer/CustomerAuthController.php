@@ -1700,17 +1700,9 @@ class CustomerAuthController extends Controller{
                 }
                 DB::commit();
 
-                // After commit — mail/SMS failure must never affect order placement
-                try {
-                    Helper::sendOrderNotificationEmail($OrderID);
-                } catch (\Throwable $e) {
-                    logger($e);
-                }
-                try {
-                    Helper::sendOrderNotificationSms($OrderID);
-                } catch (\Throwable $e) {
-                    logger($e);
-                }
+                // After payment confirmed — send admin email + SMS together (never blocks order)
+                $notify = Helper::notifyNewOrder($OrderID, true);
+                logger('New order admin notify ' . $OrderID . ': ' . json_encode($notify));
 
                 return $this->successResponse([], "Payment Status Successfully Updated");
             } else {

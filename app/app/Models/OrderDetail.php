@@ -59,12 +59,7 @@ class OrderDetail extends Model
                 ->pluck('ProductImage')
                 ->first();
         }
-        if (!$image) {
-            $image = config('app.url') . '/' . 'assets/images/no-image-b.png';
-        } else {
-            $image = config('app.url') . '/' . $image;
-        }
-        return $image;
+        return \Helper::apiCheckImageExistsUrl($image ?? '');
     }
 
     public function product()

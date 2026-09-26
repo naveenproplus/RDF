@@ -476,7 +476,7 @@ class CustomerAPIController extends Controller{
                 ->where('PC.ActiveStatus', 'Active')
                 ->where('PC.DFlag', 0)->where('PSC.ActiveStatus', 'Active')->where('PSC.DFlag', 0)
                 ->select('P.ProductName', 'P.ProductID', 'PCT.PCTName', 'PCT.PCTID', 'PC.PCName', 'PC.PCID', 'PSC.PSCName', 'PSC.PSCID', 'U.UName', 'U.UCode', 'U.UID',
-                    DB::raw('CONCAT("' . config('app.url') . '/", COALESCE(NULLIF(P.ProductImage, ""), "assets/images/no-image-b.png")) AS ProductImage'),
+                    'P.ProductImage',
                     DB::raw('(SELECT CASE
                        WHEN EXISTS (SELECT 1 FROM tbl_products_variation WHERE ProductID = P.ProductID)
                        THEN (SELECT PRate FROM tbl_products_variation WHERE ProductID = P.ProductID ORDER BY SRate ASC LIMIT 1)
@@ -509,6 +509,7 @@ class CustomerAPIController extends Controller{
                     ->select('AD.Values', 'AD.valuesInTranslation')
                     ->first();
                 $Product->unit = $productUnit->Values ?? $Product->UName ?? '-';
+                $Product->ProductImage = Helper::apiCheckImageExistsUrl($Product->ProductImage ?? '');
                 $Product->SRate = Helper::formatAmount($Product->SRate);
                 $Product->PRate = Helper::formatAmount($Product->PRate);
                 unset($Product->UName);
@@ -544,7 +545,7 @@ class CustomerAPIController extends Controller{
                 ->where('PC.DFlag', 0)->where('PSC.ActiveStatus', 'Active')->where('PSC.DFlag', 0)
                 ->select('P.ProductName', 'P.ProductNameInTranslation', 'P.ProductID', 'PCT.PCTName', 'PCT.PCTNameInTranslation', 'PCT.PCTID', 'PC.PCName',
                     'PC.PCNameInTranslation', 'PC.PCID', 'PSC.PSCName', 'PSC.PSCNameInTranslation', 'PSC.PSCID', 'U.UName', 'U.UNameInTranslation',
-                    DB::raw('CONCAT("' . config('app.url') . '/", COALESCE(NULLIF(P.ProductImage, ""), "assets/images/no-image-b.png")) AS ProductImage'),
+                    'P.ProductImage',
                     DB::raw('(SELECT CASE
                        WHEN EXISTS (SELECT 1 FROM tbl_products_variation WHERE ProductID = P.ProductID)
                        THEN (SELECT PRate FROM tbl_products_variation WHERE ProductID = P.ProductID ORDER BY SRate ASC LIMIT 1)
@@ -597,6 +598,7 @@ class CustomerAPIController extends Controller{
                 $Product->PCName = json_decode($Product->PCNameInTranslation)->$lang ?? $Product->PCName;
                 $Product->PSCName = json_decode($Product->PSCNameInTranslation)->$lang ?? $Product->PSCName;
                 $Product->ProductName = json_decode($Product->ProductNameInTranslation)->$lang ?? $Product->ProductName;
+                $Product->ProductImage = Helper::apiCheckImageExistsUrl($Product->ProductImage ?? '');
                 $Product->SRate = Helper::formatAmount($Product->SRate);
                 $Product->PRate = Helper::formatAmount($Product->PRate);
                 unset($Product->PCTNameInTranslation);

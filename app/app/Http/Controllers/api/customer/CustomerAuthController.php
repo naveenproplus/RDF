@@ -151,13 +151,15 @@ class CustomerAuthController extends Controller{
             });
         }
 
-        $products = $products->select('P.ProductName', 'P.ProductID', 'PC.PCName', 'PC.PCID', 'PSC.PSCName', 'PSC.PSCID', 'U.UName', 'U.UCode', 'U.UID', DB::raw('CONCAT("' . url('/') . '/", COALESCE(NULLIF(P.ProductImage, ""), "assets/images/no-image-b.png")) AS ProductImage'))
+        $products = $products->select('P.ProductName', 'P.ProductID', 'PC.PCName', 'PC.PCID', 'PSC.PSCName', 'PSC.PSCID', 'U.UName', 'U.UCode', 'U.UID', 'P.ProductImage')
             ->paginate($perPage, ['*'], 'page', $pageNo);
 
         foreach ($products as $row) {
+            $row->ProductImage = Helper::apiCheckImageExistsUrl($row->ProductImage ?? '');
             $row->GalleryImages = DB::table('tbl_products_gallery')
                 ->where('ProductID', $row->ProductID)
-                ->pluck(DB::raw('CONCAT("' . url('/') . '/", COALESCE(NULLIF(gImage, ""), "assets/images/no-image-b.png")) AS gImage'))
+                ->pluck('gImage')
+                ->map(fn ($g) => Helper::apiCheckImageExistsUrl($g))
                 ->toArray();
         }
 
@@ -264,7 +266,7 @@ class CustomerAuthController extends Controller{
             $item->PCTName = json_decode($item->PCTNameInTranslation)->$lang ?? $item->PCTName;
             $item->PCName = json_decode($item->PCNameInTranslation)->$lang ?? $item->PCName;
             $item->PSCName = json_decode($item->PSCNameInTranslation)->$lang ?? $item->PSCName;
-            $item->ProductImage = Helper::productImageFileExists($item->ProductImage) ? url($item->ProductImage) : url("assets/images/no-image-b.png");
+            $item->ProductImage = Helper::apiCheckImageExistsUrl($item->ProductImage ?? '');
             $product_rate = $item->SRate * $item->Qty;
             $item->PTotalRate = Helper::formatAmount($product_rate);
             $item->PRate = Helper::formatAmount($item->PRate);
@@ -1102,7 +1104,7 @@ class CustomerAuthController extends Controller{
                 $item->PCName = json_decode($item->PCNameInTranslation)->$lang ?? $item->PCName;
                 $item->PSCName = json_decode($item->PSCNameInTranslation)->$lang ?? $item->PSCName;
 
-                $item->ProductImage = Helper::productImageFileExists($item->ProductImage) ? url($item->ProductImage) : url("assets/images/no-image-b.png");
+                $item->ProductImage = Helper::apiCheckImageExistsUrl($item->ProductImage ?? '');
                 $product_rate = $item->SRate * $item->Qty;
                 $item->PTotalRate = Helper::formatAmount($product_rate);
                 $item->PRate = Helper::formatAmount($item->PRate);

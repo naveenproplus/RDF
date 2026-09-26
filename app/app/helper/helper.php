@@ -679,21 +679,44 @@ class helper{
 		if ($url === '') {
 			return null;
 		}
-		if (preg_match('#^(https?:)?//#i', $url) || str_starts_with($url, '/')) {
+		if (preg_match('#^(https?:)?//#i', $url)) {
 			return $url;
 		}
+		$url = ltrim($url, '/');
 		// Document root = parent of Laravel (index.php + uploads/)
-		return rtrim(dirname(base_path()), '/\\') . '/' . ltrim($url, '/');
+		return rtrim(dirname(base_path()), '/\\') . '/' . $url;
 	}
 
+	/**
+	 * Web root that holds uploads/ and assets/ (parent of Laravel /app).
+	 */
+	public static function productImageWebRoot(): string
+	{
+		return rtrim(dirname(base_path()), '/\\');
+	}
+
+	/**
+	 * True when $relOrAbs points to an existing local image file.
+	 * Does NOT blindly trust uploads/ paths — missing files must fall back to placeholder.
+	 */
 	public static function productImageFileExists(?string $url): bool
 	{
+		$resolved = self::resolveProductImageRelative($url);
+		return $resolved !== null && $resolved !== '';
+	}
+
+	/**
+	 * Return a relative path that exists on disk, or null if none.
+	 * If DB filename is missing but the product folder has another main image, use that.
+	 */
+	public static function resolveProductImageRelative(?string $url): ?string
+	{
 		if ($url === null) {
-			return false;
+			return null;
 		}
 		$url = trim(str_replace('\\', '/', $url));
 		if ($url === '') {
-			return false;
+			return null;
 		}
 
 		$lower = strtolower($url);
@@ -703,38 +726,105 @@ class helper{
 			|| str_contains($lower, 'no-images')
 			|| str_contains($lower, 'placeholder')
 		) {
-			return false;
+			return null;
 		}
 
-		if (@is_file($url)) {
-			return true;
+		// Strip absolute URL → relative path
+		if (preg_match('#^https?://[^/]+/(.+)$#i', $url, $m)) {
+			$url = $m[1];
 		}
+		$url = ltrim($url, '/');
 
+		$webRoot = self::productImageWebRoot();
 		$candidates = [
-			self::productImageAbsolutePath($url),
+			$url,
+			$webRoot . '/' . $url,
 		];
 		if (!empty($_SERVER['DOCUMENT_ROOT'])) {
-			$candidates[] = rtrim((string) $_SERVER['DOCUMENT_ROOT'], '/\\') . '/' . ltrim($url, '/');
+			$candidates[] = rtrim((string) $_SERVER['DOCUMENT_ROOT'], '/\\') . '/' . $url;
 		}
-
+		if (@is_file($url)) {
+			return $url;
+		}
 		foreach ($candidates as $abs) {
 			if ($abs && !preg_match('#^(https?:)?//#i', (string) $abs) && @is_file((string) $abs)) {
-				return true;
+				// Return relative under web root when possible
+				$absNorm = str_replace('\\', '/', (string) $abs);
+				$rootNorm = str_replace('\\', '/', $webRoot) . '/';
+				if (str_starts_with($absNorm, $rootNorm)) {
+					return substr($absNorm, strlen($rootNorm));
+				}
+				return $url;
 			}
 		}
 
-		// PHP-FPM open_basedir often blocks is_file() outside /app even when the
-		// file is web-reachable under /uploads. Trust real upload paths from DB.
-		if (str_starts_with($url, 'uploads/')) {
-			return true;
+		// DB filename missing — pick another image in the same folder (gallery or product root)
+		if (preg_match('#^(uploads/master/product/products/[^/]+/gallery)/#', $url, $m)) {
+			$alt = self::findMainImageInProductDir($m[1]);
+			if ($alt) {
+				return $alt;
+			}
+		}
+		if (preg_match('#^(uploads/master/product/products/[^/]+)/#', $url, $m)) {
+			$alt = self::findMainImageInProductDir($m[1]);
+			if ($alt) {
+				return $alt;
+			}
 		}
 
-		return false;
+		return null;
+	}
+
+	/**
+	 * Find a usable main product image under a relative product directory.
+	 */
+	public static function findMainImageInProductDir(string $relativeDir): ?string
+	{
+		$relativeDir = trim(str_replace('\\', '/', $relativeDir), '/');
+		$dir = self::productImageWebRoot() . '/' . $relativeDir;
+		if (!@is_dir($dir)) {
+			return null;
+		}
+
+		$files = @scandir($dir);
+		if (!is_array($files)) {
+			return null;
+		}
+
+		$mains = [];
+		foreach ($files as $file) {
+			if ($file === '.' || $file === '..') {
+				continue;
+			}
+			$path = $dir . '/' . $file;
+			if (!@is_file($path)) {
+				continue;
+			}
+			if (!preg_match('/\.(jpe?g|png|webp|gif)$/i', $file)) {
+				continue;
+			}
+			// Skip thumbnail variants: name_10.png, name_25.jpg, etc.
+			if (preg_match('/_(10|25|50|75)\.(jpe?g|png|webp|gif)$/i', $file)) {
+				continue;
+			}
+			$mains[] = $file;
+		}
+
+		if ($mains === []) {
+			return null;
+		}
+
+		// Prefer newest by mtime
+		usort($mains, static function ($a, $b) use ($dir) {
+			return (@filemtime($dir . '/' . $b) ?: 0) <=> (@filemtime($dir . '/' . $a) ?: 0);
+		});
+
+		return $relativeDir . '/' . $mains[0];
 	}
 
 	public static function checkProductImageExists($url){
-		$image = self::productImageFileExists($url) ? $url : "assets/images/no-images.jpg";
-		return $image;
+		$resolved = self::resolveProductImageRelative($url);
+		return $resolved ?: 'assets/images/no-images.jpg';
 	}
 
 	/**
@@ -761,16 +851,8 @@ class helper{
 
 	public static function apiCheckImageExistsUrl($url)
 	{
-		$path = trim(str_replace('\\', '/', (string) $url));
-		// Already absolute — keep only the path under the host
-		if (preg_match('#^https?://[^/]+/(.+)$#i', $path, $m)) {
-			$path = $m[1];
-		}
-		$path = ltrim($path, '/');
-		if ($path === '' || !self::productImageFileExists($path)) {
-			$path = 'assets/images/no-images.jpg';
-		}
-		return self::apiImageBaseUrl() . '/' . $path;
+		$path = self::resolveProductImageRelative($url) ?: 'assets/images/no-images.jpg';
+		return self::apiImageBaseUrl() . '/' . ltrim($path, '/');
 	}
 
 	public static function getVehicleType($data=array()){

@@ -353,7 +353,7 @@ class MasterController extends Controller
                 });
 
             $result = $products->select('P.ProductName', 'P.ProductID', 'PCT.PCTName', 'PCT.PCTID', 'PC.PCName', 'PC.PCID', 'PSC.PSCName', 'PSC.PSCID', 'U.UName', 'U.UCode', 'U.UID',
-                DB::raw('CONCAT("' . config('app.url') . '/", COALESCE(NULLIF(P.ProductImage, ""), "assets/images/no-image-b.png")) AS ProductImage'),
+                'P.ProductImage',
                 DB::raw('(SELECT CASE
                        WHEN EXISTS (SELECT 1 FROM tbl_products_variation WHERE ProductID = P.ProductID AND DFlag = 0)
                        THEN (SELECT PRate FROM tbl_products_variation WHERE ProductID = P.ProductID AND DFlag = 0 ORDER BY SRate ASC LIMIT 1)
@@ -383,6 +383,7 @@ class MasterController extends Controller
 
             $result->getCollection()->map(function ($item) {
                 $item->wishlist = false;
+                $item->ProductImage = Helper::apiCheckImageExistsUrl($item->ProductImage ?? '');
                 $item->PRate = Helper::formatAmount($item->PRate);
                 $item->SRate = Helper::formatAmount($item->SRate);
                 $item->unit = DB::table('tbl_products_variation')
@@ -476,7 +477,7 @@ class MasterController extends Controller
                 ->where('P.DFlag', 0)
                 ->distinct()
                 ->select('P.ProductID', 'P.ProductName', 'U.UName', 'U.UCode', 'U.UID',
-                    DB::raw("CONCAT('" . config('app.url') . "/', COALESCE(P.ProductImage, 'assets/images/no-image-b.png')) as ProductImage"),
+                    'P.ProductImage',
                     DB::raw('COALESCE((SELECT PRate FROM tbl_products_variation WHERE tbl_products_variation.ProductID = P.ProductID ORDER BY SRate LIMIT 1), P.PRate) as PRate'),
                     DB::raw('COALESCE((SELECT SRate FROM tbl_products_variation WHERE tbl_products_variation.ProductID = P.ProductID ORDER BY SRate LIMIT 1), P.SRate) as SRate'),
                     DB::raw('false AS IsInWishlist')
@@ -484,6 +485,7 @@ class MasterController extends Controller
                 ->get();
 
             $relatedProducts->transform(function ($item) {
+                $item->ProductImage = Helper::apiCheckImageExistsUrl($item->ProductImage ?? '');
                 $item->PRate = Helper::formatAmount($item->PRate);
                 $item->SRate = Helper::formatAmount($item->SRate);
                 $item->unit = DB::table('tbl_products_variation')
@@ -638,7 +640,7 @@ class MasterController extends Controller
 
             $result = $products->select('P.ProductName', 'P.ProductNameInTranslation', 'P.ProductID', 'PCT.PCTName', 'PCT.PCTNameInTranslation',
                 'PCT.PCTID', 'PC.PCName', 'PC.PCNameInTranslation', 'PC.PCID', 'PSC.PSCName', 'PSC.PSCNameInTranslation', 'PSC.PSCID', 'U.UName', 'U.UNameInTranslation', 'U.UCode', 'U.UID',
-                DB::raw('CONCAT("' . config('app.url') . '/", COALESCE(NULLIF(P.ProductImage, ""), "assets/images/no-image-b.png")) AS ProductImage'),
+                'P.ProductImage',
                 DB::raw('(SELECT CASE
                        WHEN EXISTS (SELECT 1 FROM tbl_products_variation WHERE ProductID = P.ProductID AND DFlag = 0)
                        THEN (SELECT PRate FROM tbl_products_variation WHERE ProductID = P.ProductID AND DFlag = 0 ORDER BY SRate ASC LIMIT 1)
@@ -681,6 +683,7 @@ class MasterController extends Controller
                 $PSCNameInTranslation = json_decode($item->PSCNameInTranslation);
                 $item->PSCName = $PSCNameInTranslation->$lang ?? $item->PSCName;
                 unset($item->PSCNameInTranslation);
+                $item->ProductImage = Helper::apiCheckImageExistsUrl($item->ProductImage ?? '');
                 $item->PRate = Helper::formatAmount($item->PRate);
                 $item->SRate = Helper::formatAmount($item->SRate);
                 $item->unit = DB::table('tbl_products_variation')
@@ -789,7 +792,7 @@ class MasterController extends Controller
                 ->where('P.DFlag', 0)
                 ->distinct()
                 ->select('P.ProductID', 'P.ProductName', 'P.ProductNameInTranslation', 'U.UName', 'U.UCode', 'U.UID',
-                    DB::raw("CONCAT('" . config('app.url') . "/', COALESCE(P.ProductImage, 'assets/images/no-image-b.png')) as ProductImage"),
+                    'P.ProductImage',
                     DB::raw('COALESCE((SELECT PRate FROM tbl_products_variation WHERE tbl_products_variation.ProductID = P.ProductID ORDER BY SRate LIMIT 1), P.PRate) as PRate'),
                     DB::raw('COALESCE((SELECT SRate FROM tbl_products_variation WHERE tbl_products_variation.ProductID = P.ProductID ORDER BY SRate LIMIT 1), P.SRate) as SRate'),
                     DB::raw('IF(tbl_wishlists.product_id IS NOT NULL, "true", "false") as isInWishlist')
@@ -797,6 +800,7 @@ class MasterController extends Controller
 
             $relatedProducts->transform(function ($item) use ($lang, $product) {
                 $item->ProductName = json_decode($item->ProductNameInTranslation)->$lang ?? $item->ProductName;
+                $item->ProductImage = Helper::apiCheckImageExistsUrl($item->ProductImage ?? '');
                 $item->PRate = Helper::formatAmount($item->PRate);
                 $item->SRate = Helper::formatAmount($item->SRate);
                 $relatedProductsUnit = DB::table('tbl_products_variation')

@@ -46,8 +46,7 @@ class HomeController extends Controller{
 		shuffle($RecentProducts);
 		$randomProducts = array_slice($RecentProducts, 0, 10);
 		foreach($randomProducts as $data){
-			// $data->ProductImage = $data->ProductImage ? url('/').'/'.$data->ProductImage :url('/') . '/'.'assets/images/no-image-b.png';
-			$data->ProductImage = $data->ProductImage ? 'https://rpc.prodemo.in/'.$data->ProductImage :url('/') . '/'.'assets/images/no-image-b.png';
+			$data->ProductImage = url('/').'/'.Helper::checkProductImageExists($data->ProductImage);
 		}
 		$FormData['PCategories']=$PCatagories;
 		$FormData['RecentProducts']=$randomProducts;

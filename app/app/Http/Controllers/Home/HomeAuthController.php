@@ -58,15 +58,17 @@ class HomeAuthController extends Controller{
 
 		shuffle($PCatagories);
 		foreach($PCatagories as $row){
-			$row->PCImage = $row->PCImage ? url('/').'/'.$row->PCImage :url('/') . '/'.'assets/images/no-image-b.png';
+			$row->PCImage = url('/').'/'.Helper::checkProductImageExists($row->PCImage);
 			$row->PSCData = DB::table('tbl_product_subcategory')->where('ActiveStatus','Active')->where('DFlag',0)->where('PCID',$row->PCID)->select('PSCID','PSCName','PSCImage')->get();
 			/* foreach($row->PSCData as $item){
-				$item->PSCImage = $item->PSCImage ? url('/').'/'.$item->PSCImage :url('/') . '/'.'assets/images/no-image-b.png';
+				$item->PSCImage = url('/').'/'.Helper::checkProductImageExists($item->PSCImage);
 				$item->ProductData = DB::table('tbl_products')->where('ActiveStatus','Active')->where('DFlag',0)->where('CID',$row->PCID)->where('SCID',$item->PSCID)->select('ProductID','ProductName','ProductImage')->get();
 				foreach($item->ProductData as $data){
-					$data->ProductImage = $data->ProductImage ? url('/').'/'.$data->ProductImage :url('/') . '/'.'assets/images/no-image-b.png';
-					$data->ProductImage = $data->ProductImage ? 'https://rpc.prodemo.in/'.$data->ProductImage :url('/') . '/'.'assets/images/no-image-b.png';
-					$data->gImages=DB::table('tbl_products_gallery')->where('ProductID',$data->ProductID)->select(DB::raw('CONCAT("' . url('/') . '/", gImage) AS gImage'))->get();
+					$data->ProductImage = url('/').'/'.Helper::checkProductImageExists($data->ProductImage);
+					$data->gImages=DB::table('tbl_products_gallery')->where('ProductID',$data->ProductID)->select('gImage')->get();
+					foreach($data->gImages as $g){
+						$g->gImage = url('/').'/'.Helper::checkProductImageExists($g->gImage);
+					}
 				}
 			} */
 		}

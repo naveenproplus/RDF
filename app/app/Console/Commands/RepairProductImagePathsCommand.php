@@ -112,6 +112,81 @@ class RepairProductImagePathsCommand extends Command
         $this->newLine();
         $this->info(($dry ? '[DRY-RUN] ' : '') . "products ok={$ok} fixed={$fixed} cleared={$cleared}; gallery fixed={$gFixed} removed={$gCleared}");
 
+        // Categories / subcategories / category types
+        $catStats = $this->repairTableImageColumn(
+            'tbl_product_category',
+            'PCID',
+            'PCImage',
+            $dry,
+            'category'
+        );
+        $subStats = $this->repairTableImageColumn(
+            'tbl_product_subcategory',
+            'PSCID',
+            'PSCImage',
+            $dry,
+            'sub-category'
+        );
+        $typeStats = $this->repairTableImageColumn(
+            'tbl_product_category_type',
+            'PCTID',
+            'PCTImage',
+            $dry,
+            'category-type'
+        );
+
+        $this->info(($dry ? '[DRY-RUN] ' : '') .
+            "categories ok={$catStats['ok']} fixed={$catStats['fixed']} cleared={$catStats['cleared']}; " .
+            "subcategories ok={$subStats['ok']} fixed={$subStats['fixed']} cleared={$subStats['cleared']}; " .
+            "category-types ok={$typeStats['ok']} fixed={$typeStats['fixed']} cleared={$typeStats['cleared']}");
+
         return self::SUCCESS;
+    }
+
+    /**
+     * @return array{ok:int,fixed:int,cleared:int}
+     */
+    private function repairTableImageColumn(string $table, string $idCol, string $imageCol, bool $dry, string $label): array
+    {
+        $ok = 0;
+        $fixed = 0;
+        $cleared = 0;
+
+        if (!DB::getSchemaBuilder()->hasTable($table)) {
+            return compact('ok', 'fixed', 'cleared');
+        }
+
+        $rows = DB::table($table)
+            ->where('DFlag', 0)
+            ->whereNotNull($imageCol)
+            ->where($imageCol, '!=', '')
+            ->get([$idCol, $imageCol]);
+
+        foreach ($rows as $row) {
+            $id = $row->{$idCol};
+            $rel = ltrim(str_replace('\\', '/', (string) $row->{$imageCol}), '/');
+            if (@is_file(helper::productImageWebRoot() . '/' . $rel)) {
+                $ok++;
+                continue;
+            }
+
+            $resolved = helper::resolveProductImageRelative($rel);
+            if ($resolved && $resolved !== $rel && @is_file(helper::productImageWebRoot() . '/' . $resolved)) {
+                $this->line("FIX {$label} {$id}: {$rel} -> {$resolved}");
+                if (!$dry) {
+                    DB::table($table)->where($idCol, $id)->update([$imageCol => $resolved]);
+                }
+                $fixed++;
+                continue;
+            }
+
+            $this->warn("CLEAR {$label} {$id}: missing {$rel}");
+            if (!$dry) {
+                DB::table($table)->where($idCol, $id)->update([$imageCol => '']);
+            }
+            $cleared++;
+        }
+
+        return compact('ok', 'fixed', 'cleared');
     }
 }

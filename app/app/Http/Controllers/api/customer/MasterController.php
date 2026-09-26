@@ -144,13 +144,15 @@ class MasterController extends Controller
                 return $query->where('PCTName', 'like', '%' . $req->SearchText . '%');
             });
 
-        $result = $Category->select('PCTName', 'PCTNameInTranslation', 'PCTID', DB::raw('CONCAT("' . config('app.url') . '/", COALESCE(NULLIF(PCTImage, ""), "assets/images/no-image-b.png")) AS CategoryTypeImage'))
+        $result = $Category->select('PCTName', 'PCTNameInTranslation', 'PCTID', 'PCTImage')
             ->paginate($perPage, ['*'], 'page', $pageNo);
 
         $result->transform(function ($result) use ($lang) {
             $translations = json_decode($result->PCTNameInTranslation);
             $result->PCTName = $translations->$lang ?? $result->PCTName;
+            $result->CategoryTypeImage = Helper::apiCheckImageExistsUrl($result->PCTImage ?? '');
             unset($result->PCTNameInTranslation);
+            unset($result->PCTImage);
             return $result;
         });
 
@@ -171,8 +173,14 @@ class MasterController extends Controller
                 return $query->where('PCTName', 'like', '%' . $req->SearchText . '%');
             });
 
-        $result = $Category->select('PCTName', 'PCTID', DB::raw('CONCAT("' . config('app.url') . '/", COALESCE(NULLIF(PCTImage, ""), "assets/images/no-image-b.png")) AS CategoryTypeImage'))
+        $result = $Category->select('PCTName', 'PCTID', 'PCTImage')
             ->paginate($perPage, ['*'], 'page', $pageNo);
+
+        $result->getCollection()->transform(function ($row) {
+            $row->CategoryTypeImage = Helper::apiCheckImageExistsUrl($row->PCTImage ?? '');
+            unset($row->PCTImage);
+            return $row;
+        });
 
         return response()->json([
             'status' => true,
@@ -198,11 +206,13 @@ class MasterController extends Controller
                 return $query->where('PC.PCName', 'like', '%' . $req->SearchText . '%');
             });
 
-        $result = $Category->select('PC.PCName', 'PC.PCNameInTranslation', 'PC.PCID', 'PC.PCTID', DB::raw('CONCAT("' . config('app.url') . '/", COALESCE(NULLIF(PC.PCImage, ""), "assets/images/no-image-b.png")) AS CategoryImage'))->paginate($perPage, ['*'], 'page', $pageNo);
+        $result = $Category->select('PC.PCName', 'PC.PCNameInTranslation', 'PC.PCID', 'PC.PCTID', 'PC.PCImage')->paginate($perPage, ['*'], 'page', $pageNo);
         $result->transform(function ($result) use ($lang) {
             $translations = json_decode($result->PCNameInTranslation);
             $result->PCName = $translations->$lang ?? $result->PCName;
+            $result->CategoryImage = Helper::apiCheckImageExistsUrl($result->PCImage ?? '');
             unset($result->PCNameInTranslation);
+            unset($result->PCImage);
             return $result;
         });
         return response()->json([
@@ -228,7 +238,12 @@ class MasterController extends Controller
                 return $query->where('PC.PCName', 'like', '%' . $req->SearchText . '%');
             });
 
-        $result = $Category->select('PC.PCName', 'PC.PCID', 'PC.PCTID', DB::raw('CONCAT("' . config('app.url') . '/", COALESCE(NULLIF(PC.PCImage, ""), "assets/images/no-image-b.png")) AS CategoryImage'))->paginate($perPage, ['*'], 'page', $pageNo);
+        $result = $Category->select('PC.PCName', 'PC.PCID', 'PC.PCTID', 'PC.PCImage')->paginate($perPage, ['*'], 'page', $pageNo);
+        $result->getCollection()->transform(function ($row) {
+            $row->CategoryImage = Helper::apiCheckImageExistsUrl($row->PCImage ?? '');
+            unset($row->PCImage);
+            return $row;
+        });
 
         return response()->json([
             'status' => true,
@@ -260,7 +275,7 @@ class MasterController extends Controller
                 return $query->where('PSC.PSCName', 'like', '%' . $req->SearchText . '%');
             });
         $result = $SubCategory->select('PSC.PSCName', 'PSC.PSCNameInTranslation', 'PSC.PSCID', 'PC.PCID', 'PC.PCTID',
-            'PC.PCName', 'PC.PCNameInTranslation', DB::raw('CONCAT("' . url('/') . '/", COALESCE(NULLIF(PSC.PSCImage, ""), "assets/images/no-image-b.png")) AS SubCategoryImage'))
+            'PC.PCName', 'PC.PCNameInTranslation', 'PSC.PSCImage')
             ->paginate($perPage, ['*'], 'page', $pageNo);
 
         $result->transform(function ($result) use ($lang) {
@@ -268,8 +283,10 @@ class MasterController extends Controller
             $PCNameInTranslation = json_decode($result->PCNameInTranslation);
             $result->PSCName = $PSCNameInTranslation->$lang ?? $result->PSCName;
             $result->PCName = $PCNameInTranslation->$lang ?? $result->PCName;
+            $result->SubCategoryImage = Helper::apiCheckImageExistsUrl($result->PSCImage ?? '');
             unset($result->PSCNameInTranslation);
             unset($result->PCNameInTranslation);
+            unset($result->PSCImage);
             return $result;
         });
 
@@ -301,7 +318,12 @@ class MasterController extends Controller
             ->when($req->has('SearchText') && !empty($req->SearchText), function ($query) use ($req) {
                 return $query->where('PSC.PSCName', 'like', '%' . $req->SearchText . '%');
             });
-        $result = $SubCategory->select('PSC.PSCName', 'PSC.PSCID','PC.PCID','PC.PCTID','PC.PCName', DB::raw('CONCAT("' . url('/') . '/", COALESCE(NULLIF(PSC.PSCImage, ""), "assets/images/no-image-b.png")) AS SubCategoryImage'))->paginate($perPage, ['*'], 'page', $pageNo);
+        $result = $SubCategory->select('PSC.PSCName', 'PSC.PSCID','PC.PCID','PC.PCTID','PC.PCName', 'PSC.PSCImage')->paginate($perPage, ['*'], 'page', $pageNo);
+        $result->getCollection()->transform(function ($row) {
+            $row->SubCategoryImage = Helper::apiCheckImageExistsUrl($row->PSCImage ?? '');
+            unset($row->PSCImage);
+            return $row;
+        });
 
         return response()->json([
             'status' => true,

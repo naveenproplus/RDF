@@ -39,7 +39,7 @@ class HomeController extends Controller{
 
 		shuffle($PCatagories);
 		foreach($PCatagories as $row){
-			$row->PCImage = $row->PCImage ? url('/').'/'.$row->PCImage :url('/') . '/'.'assets/images/no-image-b.png';
+			$row->PCImage = url('/').'/'.Helper::checkProductImageExists($row->PCImage);
 			$row->PSCData = DB::table('tbl_product_subcategory')->where('ActiveStatus','Active')->where('DFlag',0)->where('PCID',$row->PCID)->select('PSCID','PSCName','PSCImage')->get();
 		}
 		$RecentProducts = DB::table('tbl_products as P')->leftJoin('tbl_product_subcategory as PSC','PSC.PSCID','P.SCID')->where('P.ActiveStatus','Active')->where('P.DFlag',0)->select('P.ProductID','P.ProductName','P.ProductImage','PSC.PSCName')->get()->toArray();

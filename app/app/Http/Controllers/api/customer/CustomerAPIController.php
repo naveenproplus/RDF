@@ -634,12 +634,13 @@ class CustomerAPIController extends Controller{
             ->get();
         $categories = DB::table('tbl_product_category as PC')
             ->where('PC.ActiveStatus', 'Active')->where('PC.DFlag', 0)
-            ->select('PC.PCName','PC.PCNameInTranslation', 'PC.PCID', 'PC.PCTID',
-                DB::raw('CONCAT("' . config('app.url') . '/", COALESCE(NULLIF(PC.PCImage, ""), "assets/images/no-image-b.png")) AS CategoryImage'))
+            ->select('PC.PCName','PC.PCNameInTranslation', 'PC.PCID', 'PC.PCTID', 'PC.PCImage')
             ->take(9)->get();
         $categories->transform(function ($category) use ($lang) {
             $category->PCName = json_decode($category->PCNameInTranslation)->$lang ?? $category->PCName;
+            $category->CategoryImage = Helper::apiCheckImageExistsUrl($category->PCImage ?? '');
             unset($category->PCNameInTranslation);
+            unset($category->PCImage);
             return $category;
         });
         $response->categories = $categories;

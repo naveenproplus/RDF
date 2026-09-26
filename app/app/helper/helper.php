@@ -758,15 +758,10 @@ class helper{
 			}
 		}
 
-		// DB filename missing — pick another image in the same folder (gallery or product root)
-		if (preg_match('#^(uploads/master/product/products/[^/]+/gallery)/#', $url, $m)) {
-			$alt = self::findMainImageInProductDir($m[1]);
-			if ($alt) {
-				return $alt;
-			}
-		}
-		if (preg_match('#^(uploads/master/product/products/[^/]+)/#', $url, $m)) {
-			$alt = self::findMainImageInProductDir($m[1]);
+		// DB filename missing — pick another image in the same folder
+		$dir = dirname($url);
+		if ($dir !== '.' && $dir !== '' && str_starts_with($dir, 'uploads/')) {
+			$alt = self::findMainImageInProductDir($dir);
 			if ($alt) {
 				return $alt;
 			}

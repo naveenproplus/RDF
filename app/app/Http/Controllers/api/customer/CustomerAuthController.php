@@ -96,7 +96,12 @@ class CustomerAuthController extends Controller{
             $Category->where('PCName', 'like', '%' . $req->SearchText . '%');
         }
 
-        $result = $Category->select('PCName', 'PCID', DB::raw('CONCAT("' . url('/') . '/", COALESCE(NULLIF(PCImage, ""), "assets/images/no-image-b.png")) AS CategoryImage'))->paginate($perPage, ['*'], 'page', $pageNo);
+        $result = $Category->select('PCName', 'PCID', 'PCImage')->paginate($perPage, ['*'], 'page', $pageNo);
+        $result->getCollection()->transform(function ($row) {
+            $row->CategoryImage = Helper::apiCheckImageExistsUrl($row->PCImage ?? '');
+            unset($row->PCImage);
+            return $row;
+        });
 
         return response()->json([
             'status' => true,
@@ -119,7 +124,12 @@ class CustomerAuthController extends Controller{
         if ($req->has('SearchText') && !empty($req->SearchText)) {
             $SubCategory->where('PSC.PSCName', 'like', '%' . $req->SearchText . '%');
         }
-        $result = $SubCategory->select('PSC.PSCName', 'PSC.PSCID', 'PC.PCID', 'PC.PCName', DB::raw('CONCAT("' . url('/') . '/", COALESCE(NULLIF(PSC.PSCImage, ""), "assets/images/no-image-b.png")) AS SubCategoryImage'))->paginate($perPage, ['*'], 'page', $pageNo);
+        $result = $SubCategory->select('PSC.PSCName', 'PSC.PSCID', 'PC.PCID', 'PC.PCName', 'PSC.PSCImage')->paginate($perPage, ['*'], 'page', $pageNo);
+        $result->getCollection()->transform(function ($row) {
+            $row->SubCategoryImage = Helper::apiCheckImageExistsUrl($row->PSCImage ?? '');
+            unset($row->PSCImage);
+            return $row;
+        });
 
         return response()->json([
             'status' => true,

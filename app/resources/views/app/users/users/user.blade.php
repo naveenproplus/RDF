@@ -138,14 +138,14 @@
                                 </div>
                                 <div class="col-sm-6 mt-20">
                                     <div class="form-group">
-                                        <label for="txtEmail">Email</label>
+                                        <label for="txtEmail">Email <span class="fs-10 fw-500" style="color:#ab9898">(User Name)</span> <span class="required">*</span></label>
                                         <input type="email"  id="txtEmail" class="form-control  {{$Theme['input-size']}}" placeholder="E-Mail" value="<?php if($isEdit==true){ echo $EditData[0]->EMail;} ?>">
                                         <span class="errors err-sm" id="txtEmail-err"></span>
                                     </div>
                                 </div>
                                 <div class="col-sm-6 mt-20">
                                     <div class="form-group">
-                                        <label for="txtMobileNumber"> MobileNumber  <span class="fs-10 fw-500" style="color:#ab9898">(User Name) </span><span class="required">*</span></label>
+                                        <label for="txtMobileNumber">Mobile Number <span class="required">*</span></label>
                                         <div class="input-group">
                                             <span class="input-group-text" id="CallCode">+91</span>
                                             <input type="number" @if($isEdit) disabled @endif id="txtMobileNumber" class="form-control  {{$Theme['input-size']}}" data-length="0" placeholder="Mobile Number enter without country code"  value="<?php if($isEdit==true){ echo $EditData[0]->MobileNumber;} ?>">
@@ -479,7 +479,7 @@
                 type:"post",
                 url:"{{url('/')}}/get/taluks",
                 headers: { 'X-CSRF-Token' : $('meta[name=_token]').attr('content') },
-                data:{CountryID:$('#lstCountry').val(),StateID:$('#lstState').val(),DistrictID:$('#lstStates').val()},
+                data:{CountryID:$('#lstCountry').val(),StateID:$('#lstState').val(),DistrictID:$('#lstDistricts').val()},
                 dataType:"json",
                 async:true,
                 error:function(e, x, settings, exception){ajaxErrors(e, x, settings, exception);resolve([])},
@@ -614,15 +614,15 @@
             }else if(FirstName.length>50){
                 $('#txtFirstName-err').html('The First Name is not greater than 50 characters.');status=false;
             }
-            if(EMail!=""){
-				if(EMail.isValidEMail()==false){
-                    $('#txtEmail-err').html('E-Mail is not valid');status=false;
-                }else if(validate.email.status==false){
-                    $('#txtEmail-err').html(validate.email.message);status=false;
-                }else if(validate.email.status==true){
-                    $('#txtEmail-err').html(validate.email.message);
-                    $('#txtEmail-err').addClass('success');
-                }
+            if(EMail==""){
+                $('#txtEmail-err').html('E-Mail is required');status=false;
+            }else if(EMail.isValidEMail()==false){
+                $('#txtEmail-err').html('E-Mail is not valid');status=false;
+            }else if(validate.email.status==false){
+                $('#txtEmail-err').html(validate.email.message);status=false;
+            }else if(validate.email.status==true){
+                $('#txtEmail-err').html(validate.email.message);
+                $('#txtEmail-err').addClass('success');
             }
             if(LastName==""){
 				if(LastName.length>50){
@@ -691,7 +691,7 @@
 			formData.append('ActiveStatus',$('#lstActiveStatus').val());
 			formData.append('loginStatus',$('#lstLoginStatus').val());
 			formData.append('Address',$('#txtAddress').val());
-			formData.append('District',$('#lstDistrict').val());
+			formData.append('District',$('#lstDistricts').val());
 			formData.append('Taluk',$('#lstTaluk').val());
 			formData.append('City',$('#lstCity').val());
 			formData.append('State',$('#lstState').val());

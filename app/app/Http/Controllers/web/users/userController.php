@@ -165,7 +165,8 @@ class userController extends Controller{
 			$rules=array(
 				'FirstName' =>'required|min:3|max:50',
 				'LastName' =>'max:50',
-				'MobileNumber' =>['required',new ValidUnique(array("TABLE"=>"users","WHERE"=>" EMail='".$req->MobileNumber."' "),"This Mobile Number is already taken.")],
+				'MobileNumber' =>['required',new ValidUnique(array("TABLE"=>"users","WHERE"=>" MobileNumber='".$req->MobileNumber."' "),"This Mobile Number is already taken.")],
+				'EMail'=>['required','email',new ValidUnique(array("TABLE"=>"users","WHERE"=>" EMail='".$req->EMail."' "),"This E-Mail is already taken.")],
 				'Gender'=>['required',new ValidDB($ValidDB['Gender'])],
 				'State'=>['required',new ValidDB($ValidDB['State'])],
 				'City'=>['required',new ValidDB($ValidDB['City'])],
@@ -178,7 +179,6 @@ class userController extends Controller{
 				'PostalCodeID.required'=>"Postal Code is required"
 			);
 			if($req->ProfileImage!=""){$rules['PImage']='mimes:jpeg,jpg,png,gif,bmp,webp';}
-			if($req->EMail!=""){$rules['EMail']=['required','email',new ValidUnique(array("TABLE"=>"users","WHERE"=>" email='".$req->EMail."' "),"This E-Mail is already taken.")];}
 
 			$validator = Validator::make($req->all(), $rules,$message);
 
@@ -219,7 +219,7 @@ class userController extends Controller{
 					"Name"=>$Name,
 					"FirstName"=>$req->FirstName,
 					"LastName"=>$req->LastName,
-					"UserName"=>$req->MobileNumber,
+					"UserName"=>$req->EMail,
 					"MobileNumber"=>$req->MobileNumber,
 					"Password"=>$pwd1,
 					"Password1"=>$pwd2,
@@ -314,7 +314,8 @@ class userController extends Controller{
 			$rules=array(
 				'FirstName' =>'required|min:3|max:50',
 				'LastName' =>'max:50',
-				'MobileNumber' =>['required',new ValidUnique(array("TABLE"=>"users","WHERE"=>" email='".$req->MobileNumber."'  and UserID<>'".$UserID."' "),"This Mobile Number is already taken.")],
+				'MobileNumber' =>['required',new ValidUnique(array("TABLE"=>"users","WHERE"=>" MobileNumber='".$req->MobileNumber."'  and UserID<>'".$UserID."' "),"This Mobile Number is already taken.")],
+				'EMail'=>['required','email:filter',new ValidUnique(array("TABLE"=>"users","WHERE"=>" EMail='".$req->EMail."' and UserID<>'".$UserID."'"),"This E-Mail is already taken.")],
 				'Gender'=>['required',new ValidDB($ValidDB['Gender'])],
 				'State'=>['required',new ValidDB($ValidDB['State'])],
 				'City'=>['required',new ValidDB($ValidDB['City'])],
@@ -325,7 +326,6 @@ class userController extends Controller{
 				'PostalCodeID.required'=>"Postal Code is required"
 			);
 			if($req->ProfileImage!=""){$rules['PImage']='mimes:jpeg,jpg,png,gif,bmp,webp';}
-			if($req->EMail!=""){$rules['EMail']=['required','email:filter',new ValidUnique(array("TABLE"=>"users","WHERE"=>" email='".$req->EMail."' and UserID<>'".$UserID."'"),"This E-Mail is already taken.")];}
 
 
 			$validator = Validator::make($req->all(), $rules,$message);
@@ -370,7 +370,7 @@ class userController extends Controller{
 					"Name"=>$Name,
 					"FirstName"=>$req->FirstName,
 					"LastName"=>$req->LastName,
-					"UserName"=>$req->MobileNumber,
+					"UserName"=>$req->EMail,
 					"MobileNumber"=>$req->MobileNumber,
 					"RoleID"=>$req->UserRole,
 					"GenderID"=>$req->Gender,

@@ -192,10 +192,8 @@ class MasterController extends Controller
 
     public function GetCustomerCategory(Request $req){
         $lang = optional($req->auth_customer)->language ?? 'en';
-        $pageNo = $req->PageNo ?? 1;
-        $perPage = 15;
 
-        $Category = DB::table('tbl_product_category as PC')
+        $rows = DB::table('tbl_product_category as PC')
             ->where('PC.ActiveStatus', 'Active')->where('PC.DFlag', 0)
             ->when($req->PCTID, function ($query) use ($req) {
                 $PCTID = $req->PCTID;
@@ -204,30 +202,29 @@ class MasterController extends Controller
             })
             ->when($req->has('SearchText') && !empty($req->SearchText), function ($query) use ($req) {
                 return $query->where('PC.PCName', 'like', '%' . $req->SearchText . '%');
-            });
+            })
+            ->orderBy('PC.PCName')
+            ->select('PC.PCName', 'PC.PCNameInTranslation', 'PC.PCID', 'PC.PCTID', 'PC.PCImage')
+            ->get();
 
-        $result = $Category->select('PC.PCName', 'PC.PCNameInTranslation', 'PC.PCID', 'PC.PCTID', 'PC.PCImage')->paginate($perPage, ['*'], 'page', $pageNo);
-        $result->transform(function ($result) use ($lang) {
-            $translations = json_decode($result->PCNameInTranslation);
-            $result->PCName = $translations->$lang ?? $result->PCName;
-            $result->CategoryImage = Helper::apiCheckImageExistsUrl($result->PCImage ?? '');
-            unset($result->PCNameInTranslation);
-            unset($result->PCImage);
-            return $result;
+        $rows->transform(function ($row) use ($lang) {
+            $translations = json_decode($row->PCNameInTranslation);
+            $row->PCName = $translations->$lang ?? $row->PCName;
+            $row->CategoryImage = Helper::apiCheckImageExistsUrl($row->PCImage ?? '');
+            unset($row->PCNameInTranslation);
+            unset($row->PCImage);
+            return $row;
         });
         return response()->json([
             'status' => true,
-            'data' => $result->items(),
-            'CurrentPage' => $result->currentPage(),
-            'LastPage' => $result->lastPage(),
+            'data' => $rows,
+            'CurrentPage' => 1,
+            'LastPage' => 1,
         ]);
     }
 
     public function GetCategory(Request $req){
-        $pageNo = $req->PageNo ?? 1;
-        $perPage = 15;
-
-        $Category = DB::table('tbl_product_category as PC')
+        $rows = DB::table('tbl_product_category as PC')
             ->where('PC.ActiveStatus', 'Active')->where('PC.DFlag', 0)
             ->when($req->PCTID, function ($query) use ($req) {
                 $PCTID = $req->PCTID;
@@ -236,10 +233,12 @@ class MasterController extends Controller
             })
             ->when($req->has('SearchText') && !empty($req->SearchText), function ($query) use ($req) {
                 return $query->where('PC.PCName', 'like', '%' . $req->SearchText . '%');
-            });
+            })
+            ->orderBy('PC.PCName')
+            ->select('PC.PCName', 'PC.PCID', 'PC.PCTID', 'PC.PCImage')
+            ->get();
 
-        $result = $Category->select('PC.PCName', 'PC.PCID', 'PC.PCTID', 'PC.PCImage')->paginate($perPage, ['*'], 'page', $pageNo);
-        $result->getCollection()->transform(function ($row) {
+        $rows->transform(function ($row) {
             $row->CategoryImage = Helper::apiCheckImageExistsUrl($row->PCImage ?? '');
             unset($row->PCImage);
             return $row;
@@ -247,9 +246,9 @@ class MasterController extends Controller
 
         return response()->json([
             'status' => true,
-            'data' => $result->items(),
-            'CurrentPage' => $result->currentPage(),
-            'LastPage' => $result->lastPage(),
+            'data' => $rows,
+            'CurrentPage' => 1,
+            'LastPage' => 1,
         ]);
     }
     public function GetCustomerSubCategory(Request $req){
